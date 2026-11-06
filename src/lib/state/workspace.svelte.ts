@@ -66,6 +66,67 @@ export class WorkspaceStore {
   select(path: string): void {
     this.selectedPath = path;
   }
+
+  async createEntry(parent: string, name: string, isDir: boolean): Promise<string | null> {
+    try {
+      const path = await ipc.createEntry(parent, name, isDir);
+      await this.refresh();
+      if (isDir) {
+        this.expand(path);
+      }
+      return path;
+    } catch (error) {
+      this.error = String(error);
+      return null;
+    }
+  }
+
+  async renameEntry(path: string, newName: string): Promise<string | null> {
+    try {
+      const renamed = await ipc.renameEntry(path, newName);
+      if (this.selectedPath === path) {
+        this.selectedPath = renamed;
+      }
+      await this.refresh();
+      return renamed;
+    } catch (error) {
+      this.error = String(error);
+      return null;
+    }
+  }
+
+  async deleteEntry(path: string): Promise<boolean> {
+    try {
+      await ipc.deleteEntry(path);
+      if (this.selectedPath === path) {
+        this.selectedPath = null;
+      }
+      await this.refresh();
+      return true;
+    } catch (error) {
+      this.error = String(error);
+      return false;
+    }
+  }
+
+  async moveEntry(src: string, destDir: string): Promise<string | null> {
+    try {
+      const moved = await ipc.moveEntry(src, destDir);
+      if (this.selectedPath === src) {
+        this.selectedPath = moved;
+      }
+      await this.refresh();
+      return moved;
+    } catch (error) {
+      this.error = String(error);
+      return null;
+    }
+  }
+}
+
+export function parentDirectory(path: string): string {
+  const index = path.lastIndexOf("/");
+  return index > 0 ? path.slice(0, index) : path;
 }
 
 export const workspace = new WorkspaceStore();

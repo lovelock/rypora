@@ -129,6 +129,23 @@ button {
   background: var(--accent-soft);
 }
 
+.tree-row.renaming {
+  cursor: default;
+}
+
+.tree-row.renaming input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  padding: 1px 4px;
+  outline: none;
+}
+
 .chev {
   width: 12px;
   color: var(--muted);
@@ -205,4 +222,97 @@ button {
   font-size: 12px;
   color: #b42318;
   border-top: 1px solid var(--border);
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 28%);
+}
+
+.dialog {
+  position: relative;
+  z-index: 1;
+  width: 320px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.dialog h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.dialog p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.dialog input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.dialog input:focus {
+  border-color: var(--accent);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.dialog button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dialog button:hover {
+  background: var(--hover);
+}
+
+.dialog button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dialog button.primary:hover {
+  filter: brightness(1.06);
+}
+
+.dialog button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

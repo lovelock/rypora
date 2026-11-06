@@ -39,3 +39,5 @@ export interface AppConfig {
   sidebarWidth: number;
   fontSize: number;
 }
+
+export type ContextAction = "new-file" | "new-folder" | "rename" | "delete" | "reveal";
