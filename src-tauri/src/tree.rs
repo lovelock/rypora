@@ -16,8 +16,11 @@ pub struct FileNode {
     pub children: Vec<FileNode>,
 }
 
-pub fn is_markdown(path: &Path) -> bool {
-    path.extension()
+pub fn is_skipped_dir(name: &str) -> bool {
+    name.starts_with('.') || SKIPPED_DIRS.contains(&name)
+}
+
+pub fn is_markdown(path: &Path) -> bool {    path.extension()
         .and_then(|ext| ext.to_str())
         .map(|ext| {
             let ext = ext.to_ascii_lowercase();
@@ -59,7 +62,7 @@ fn scan_children(dir: &Path, out: &mut Vec<FileNode>) -> Result<(), WorkspaceErr
         let path = entry.path();
 
         if file_type.is_dir() {
-            if name.starts_with('.') || SKIPPED_DIRS.contains(&name.as_str()) {
+            if is_skipped_dir(&name) {
                 continue;
             }
             let mut node = FileNode {
