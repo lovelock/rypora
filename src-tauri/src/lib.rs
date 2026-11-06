@@ -1,3 +1,4 @@
+pub mod config;
 pub mod error;
 pub mod tree;
 pub mod workspace;
