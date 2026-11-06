@@ -4,3 +4,4 @@ src-tauri/target/
 .worktrees/
 .DS_Store
 *.log
+.superpowers/
