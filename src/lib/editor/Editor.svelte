@@ -1,0 +1,77 @@
+<script lang="ts">
+  import { onDestroy, onMount, untrack } from "svelte";
+  import { EditorView } from "@codemirror/view";
+  import { tabs } from "../state/tabs.svelte";
+  import { createEditorState } from "./setup";
+
+  let host: HTMLDivElement | undefined = $state(undefined);
+  let view: EditorView | null = null;
+  let currentPath: string | null = null;
+
+  onMount(() => {
+    view = new EditorView({
+      state: createEditorState(""),
+      parent: host!,
+    });
+  });
+
+  onDestroy(() => {
+    if (view && currentPath) {
+      tabs.capture(currentPath, view.state, view.scrollDOM.scrollTop);
+    }
+    view?.destroy();
+    view = null;
+  });
+
+  $effect(() => {
+    const path = tabs.activePath;
+    const version = tabs.loadedVersion;
+
+    if (!view) {
+      return;
+    }
+
+    if (currentPath && currentPath !== path) {
+      tabs.capture(currentPath, view.state, view.scrollDOM.scrollTop);
+    }
+
+    if (!path) {
+      currentPath = null;
+      return;
+    }
+
+    const state = tabs.state(path);
+    if (!state) {
+      return;
+    }
+
+    if (currentPath !== path || view.state !== state) {
+      currentPath = path;
+      view.setState(state);
+      const scroll = untrack(() => tabs.scrollOf(path));
+      requestAnimationFrame(() => {
+        if (!view) {
+          return;
+        }
+        if (scroll > 0) {
+          view.scrollDOM.scrollTop = scroll;
+        }
+        view.focus();
+      });
+    }
+  });
+</script>
+
+<div class="editor-host" bind:this={host}></div>
+
+<style>
+  .editor-host {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :global(.editor-host .cm-editor) {
+    height: 100%;
+  }
+</style>
