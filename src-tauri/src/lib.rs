@@ -1,5 +1,6 @@
 pub mod error;
 pub mod tree;
+pub mod workspace;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
