@@ -1,5 +1,9 @@
 :root {
-  font-family: "Inter", "Noto Sans CJK SC", "PingFang SC", system-ui, sans-serif;
+  --ui-font: system-ui, "Noto Sans CJK SC", sans-serif;
+  --editor-font: var(--ui-font);
+  --mono-font: "JetBrains Mono", "Noto Sans Mono", monospace;
+  --font-smoothing: antialiased;
+  font-family: var(--ui-font);
   color-scheme: light dark;
   --bg: #fbfbf9;
   --fg: #23262b;
@@ -14,10 +18,20 @@
   --code-fg: #8a4b2a;
   --banner-bg: #fdf3e7;
   --code-bg: #f0efe9;
-  --mono-font: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  --editor-font: "Noto Serif CJK SC", "Songti SC", Georgia, serif;
   --editor-font-size: 16px;
 }
+
+:root[data-platform="macos"] {
+  --ui-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  --mono-font: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-smoothing: auto;
+}
+
+:root[data-platform="windows"] {
+  --ui-font: "Segoe UI", "Microsoft YaHei", sans-serif;
+  --mono-font: Consolas, "Cascadia Mono", monospace;
+}
+
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -79,7 +93,8 @@ body,
 body {
   background: var(--bg);
   color: var(--fg);
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--ui-font);
+  -webkit-font-smoothing: var(--font-smoothing);
   overflow: hidden;
 }
 

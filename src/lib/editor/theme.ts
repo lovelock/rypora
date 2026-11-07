@@ -10,7 +10,7 @@ export const editorTheme = EditorView.theme({
     fontSize: "var(--editor-font-size, 16px)",
   },
   ".cm-scroller": {
-    fontFamily: "var(--editor-font, 'Noto Serif CJK SC', 'Songti SC', Georgia, serif)",
+    fontFamily: "var(--editor-font)",
     lineHeight: "1.8",
     overflow: "auto",
   },
