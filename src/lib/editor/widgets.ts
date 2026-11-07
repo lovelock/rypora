@@ -121,7 +121,10 @@ export class CodeBlockWidget extends WidgetType {
     button.textContent = "复制";
     button.title = "复制代码";
     button.setAttribute("aria-label", "复制代码");
-    button.addEventListener("mousedown", (event) => event.stopPropagation());
+    button.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();

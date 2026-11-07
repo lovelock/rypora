@@ -75,4 +75,16 @@ describe("code block copy button", () => {
     const root = render("```\n```\n\n");
     expect(root.querySelector(".cm-preview-copy")).not.toBeNull();
   });
+
+  test("keeps editor focus and cursor when the button is pressed", () => {
+    const doc = "```rust\nfn main() {}\n```\n\n";
+    const root = render(doc);
+    const button = root.querySelector<HTMLButtonElement>(".cm-preview-copy")!;
+    const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+
+    button.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view!.state.selection.main.anchor).toBe(doc.length);
+  });
 });
