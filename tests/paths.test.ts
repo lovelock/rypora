@@ -23,6 +23,10 @@ describe("resolveRelative", () => {
       "https://example.com/a.md",
     );
   });
+
+  test("resolves Windows document paths", () => {
+    expect(resolveRelative("C:\\w\\notes\\a.md", "img/x.png")).toBe("C:/w/notes/img/x.png");
+  });
 });
 
 describe("parentDirectory", () => {

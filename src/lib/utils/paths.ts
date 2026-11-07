@@ -30,7 +30,8 @@ export function resolveRelative(docPath: string, href: string): string {
     return stripped;
   }
 
-  const base = docPath.slice(0, docPath.lastIndexOf("/") + 1);
+  const separator = Math.max(docPath.lastIndexOf("/"), docPath.lastIndexOf("\\"));
+  const base = docPath.slice(0, separator + 1);
   const combined = base + stripped;
   const absolute = combined.startsWith("/");
   const parts: string[] = [];
@@ -46,5 +47,5 @@ export function resolveRelative(docPath: string, href: string): string {
     parts.push(part);
   }
 
-  return `${absolute ? "/" : ""}${parts.join("/")}`;
+  return `${absolute ? "/" : ""}${parts.join("/")}`.replace(/\\/g, "/");
 }
