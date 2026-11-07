@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use jieba_rs::{Jieba, TokenizeMode};
 use tantivy::schema::{
@@ -11,6 +11,7 @@ pub const SCHEMA_VERSION: u32 = 1;
 pub const TOKENIZER_VERSION: u32 = 1;
 pub const JIEBA_TOKENIZER: &str = "jieba";
 
+#[derive(Clone)]
 pub struct IndexSchema {
     pub schema: Schema,
     pub path: Field,
@@ -54,15 +55,20 @@ pub fn register_tokenizers(index: &Index) {
         .register(JIEBA_TOKENIZER, JiebaTokenizer::new());
 }
 
+fn shared_jieba() -> &'static Jieba {
+    static JIEBA: OnceLock<Jieba> = OnceLock::new();
+    JIEBA.get_or_init(Jieba::new)
+}
+
 #[derive(Clone)]
 pub struct JiebaTokenizer {
-    jieba: Arc<Jieba>,
+    jieba: &'static Jieba,
 }
 
 impl JiebaTokenizer {
     pub fn new() -> Self {
         Self {
-            jieba: Arc::new(Jieba::new()),
+            jieba: shared_jieba(),
         }
     }
 }
@@ -84,7 +90,7 @@ impl Tokenizer for JiebaTokenizer {
             .into_iter()
             .filter_map(|token| {
                 let word = token.word.to_lowercase();
-                if word.trim().is_empty() {
+                if word.trim().is_empty() || !word.chars().any(|c| c.is_alphanumeric()) {
                     return None;
                 }
                 let item = Token {
