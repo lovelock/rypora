@@ -90,6 +90,7 @@ export const editorTheme = EditorView.theme({
     borderRadius: "6px",
   },
   ".cm-preview-codeblock": {
+    position: "relative",
     margin: "10px 0",
     padding: "10px 14px",
     overflowX: "auto",
@@ -98,6 +99,33 @@ export const editorTheme = EditorView.theme({
     fontFamily: "var(--mono-font, monospace)",
     fontSize: "0.9em",
     lineHeight: "1.55",
+  },
+  ".cm-preview-copy": {
+    position: "absolute",
+    top: "6px",
+    right: "6px",
+    padding: "2px 8px",
+    border: "1px solid var(--border)",
+    borderRadius: "5px",
+    background: "var(--bg)",
+    color: "var(--muted)",
+    fontFamily: "var(--ui-font)",
+    fontSize: "11px",
+    lineHeight: "1.6",
+    cursor: "pointer",
+    opacity: "0",
+    pointerEvents: "none",
+    transition: "opacity 120ms ease",
+  },
+  ".cm-preview-codeblock:hover .cm-preview-copy, .cm-preview-copy:focus-visible": {
+    opacity: "1",
+    pointerEvents: "auto",
+  },
+  "@media (hover: none)": {
+    ".cm-preview-copy": {
+      opacity: "1",
+      pointerEvents: "auto",
+    },
   },
   ".cm-preview-codeblock pre": {
     margin: "0",

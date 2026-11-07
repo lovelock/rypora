@@ -3,6 +3,7 @@ import { languages } from "@codemirror/language-data";
 import { EditorView, WidgetType } from "@codemirror/view";
 import { classHighlighter, highlightTree } from "@lezer/highlight";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { copyText } from "../utils/clipboard";
 
 export class ImageWidget extends WidgetType {
   constructor(
@@ -114,11 +115,24 @@ export class CodeBlockWidget extends WidgetType {
     const wrapper = document.createElement("div");
     wrapper.className = "cm-preview-codeblock";
 
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "cm-preview-copy";
+    button.textContent = "复制";
+    button.title = "复制代码";
+    button.setAttribute("aria-label", "复制代码");
+    button.addEventListener("mousedown", (event) => event.stopPropagation());
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void this.copy(button);
+    });
+
     const pre = document.createElement("pre");
     const code = document.createElement("code");
     code.textContent = this.code;
     pre.appendChild(code);
-    wrapper.appendChild(pre);
+    wrapper.append(button, pre);
 
     wrapper.addEventListener("mousedown", (event) => {
       event.preventDefault();
@@ -128,6 +142,20 @@ export class CodeBlockWidget extends WidgetType {
 
     void this.highlight(code);
     return wrapper;
+  }
+
+  private async copy(button: HTMLButtonElement): Promise<void> {
+    if (button.disabled) {
+      return;
+    }
+
+    button.disabled = true;
+    const copied = await copyText(this.code.replace(/^\n+|\n+$/g, ""));
+    button.textContent = copied ? "已复制" : "复制失败";
+    window.setTimeout(() => {
+      button.textContent = "复制";
+      button.disabled = false;
+    }, 1500);
   }
 
   private async highlight(block: HTMLElement): Promise<void> {
