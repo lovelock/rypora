@@ -43,7 +43,22 @@ npm run build
 npm run tauri build -- --bundles deb
 ```
 
-产物在 `src-tauri/target/release/bundle/deb/`。
+产物在 `src-tauri/target/release/bundle/`。默认 `targets = "all"`，Linux 会产出 deb / rpm / AppImage。
+
+## 发布 / CI
+
+推送 `v*` tag 会触发 GitHub Actions（`.github/workflows/release.yml`），构建：
+
+- Linux x86_64：`.deb` / `.rpm` / `.AppImage`
+- Windows x86_64：NSIS `.exe` / `.msi`
+- macOS：`.dmg`（Apple Silicon + Intel）
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+构建产物会上传为 workflow artifacts，并创建一个 **draft** GitHub Release。当前未做代码签名/公证：macOS 首次打开需要右键“打开”，Windows 可能触发 SmartScreen。
 
 ## 快捷键
 
