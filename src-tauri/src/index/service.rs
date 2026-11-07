@@ -137,7 +137,7 @@ impl IndexService {
 
     pub fn shutdown(&self) {
         if let Some(handle) = self.inner.handle.lock().take() {
-            handle.stop();
+            handle.shutdown();
         }
     }
 
