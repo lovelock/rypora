@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { ContextAction, FileNode } from "../types";
   import { workspace } from "../state/workspace.svelte";
   import { parentDirectory } from "../utils/paths";
+  import { newEntryParent } from "../utils/shortcuts";
   import { tabs } from "../state/tabs.svelte";
   import TreeNode from "./TreeNode.svelte";
   import ContextMenu from "./ContextMenu.svelte";
@@ -139,12 +141,33 @@
     }
   }
 
-  function handleTreeKey(event: KeyboardEvent): void {
-    if (event.key === "F2" && workspace.selectedPath) {
-      event.preventDefault();
-      renamingPath = workspace.selectedPath;
+  function targetDirectory(): string {
+    const selected = workspace.selectedPath;
+    if (!selected) {
+      return workspace.root!;
+    }
+    const node = findNode(tree, selected);
+    return newEntryParent(workspace.root!, selected, node?.isDir ?? false);
+  }
+
+  function handleCommand(event: Event): void {
+    const command = (event as CustomEvent<{ command?: string }>).detail?.command;
+    if (!workspace.root || !command) {
+      return;
+    }
+    if (command === "new-file" || command === "new-folder") {
+      prompt = { parent: targetDirectory(), isDir: command === "new-folder" };
+    } else if (command === "rename" && workspace.selectedPath) {
+      if (findNode(tree, workspace.selectedPath)) {
+        renamingPath = workspace.selectedPath;
+      }
     }
   }
+
+  onMount(() => {
+    window.addEventListener("rypora:command", handleCommand);
+    return () => window.removeEventListener("rypora:command", handleCommand);
+  });
 </script>
 
 {#if workspace.root}
@@ -162,7 +185,6 @@
   class="tree"
   role="tree"
   tabindex="0"
-  onkeydown={handleTreeKey}
   oncontextmenu={openRootMenu}
   ondragover={(event) => event.preventDefault()}
   ondrop={(event) => {

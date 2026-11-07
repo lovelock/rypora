@@ -48,16 +48,21 @@ sudo pacman -U rypora-0.1.0-1-x86_64.pkg.tar.zst
 
 ### 快捷键
 
+> macOS 用 `Cmd`，Windows / Linux 用 `Ctrl`。
+
 | 快捷键 | 功能 |
 |---|---|
-| `Ctrl+P` | 文件名 + 正文搜索 |
-| `Ctrl+S` | 立即保存 |
-| `Ctrl+W` | 关闭当前标签 |
+| `Cmd/Ctrl+N` | 新建文件 |
+| `Cmd/Ctrl+Shift+N` | 新建文件夹 |
+| `Cmd/Ctrl+O` | 打开文件夹 |
+| `Cmd/Ctrl+P` | 文件名 + 正文搜索 |
+| `Cmd/Ctrl+S` | 立即保存 |
+| `Cmd/Ctrl+W` | 关闭当前标签 |
 | `Ctrl+Tab` | 下一个标签 |
-| `Ctrl+B` / `Ctrl+I` | 粗体 / 斜体 |
-| `Ctrl+Shift+X` | 删除线 |
-| `Ctrl+E` | 行内代码 |
-| `F2` | 重命名（文件树） |
+| `Cmd/Ctrl+B` / `Cmd/Ctrl+I` | 粗体 / 斜体 |
+| `Cmd/Ctrl+Shift+X` | 删除线 |
+| `Cmd/Ctrl+E` | 行内代码 |
+| `F2` | 重命名当前选中项 |
 
 ## 从源码运行
 

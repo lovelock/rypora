@@ -8,6 +8,8 @@
   import { indexStatus, loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
   import type { AppConfig, IndexStatus, TextHit } from "./lib/types";
   import { resolveRelative } from "./lib/utils/paths";
+  import { detectPlatform } from "./lib/utils/platform";
+  import { matchShortcut } from "./lib/utils/shortcuts";
   import FileTree from "./lib/sidebar/FileTree.svelte";
   import SearchPalette from "./lib/search/SearchPalette.svelte";
   import { searchState } from "./lib/state/search.svelte";
@@ -118,6 +120,30 @@
   }
 
   function handleKeydown(event: KeyboardEvent): void {
+    const shortcut = matchShortcut(
+      {
+        key: event.key,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+      },
+      detectPlatform(),
+    );
+
+    if (shortcut) {
+      event.preventDefault();
+      if (event.repeat || paletteVisible || discardPath) {
+        return;
+      }
+      if (shortcut === "open-folder") {
+        void workspace.openFolder();
+      } else {
+        window.dispatchEvent(new CustomEvent("rypora:command", { detail: { command: shortcut } }));
+      }
+      return;
+    }
+
     const modifier = event.ctrlKey || event.metaKey;
 
     if (modifier && event.key.toLowerCase() === "p") {
