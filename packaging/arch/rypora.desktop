@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Rypora
+Comment=A lightweight, local-first Markdown workspace
+Exec=rypora %F
+Icon=rypora
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;
+MimeType=text/markdown;
+StartupWMClass=Rypora

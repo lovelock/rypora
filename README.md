@@ -27,8 +27,15 @@ Rypora 是一个本地优先的 Markdown 工作区：打开一个文件夹就能
 | 平台 | 产物 |
 |---|---|
 | Linux x86_64 | `.AppImage` / `.deb` / `.rpm` |
+| Arch Linux x86_64 | `.pkg.tar.zst` |
 | Windows x86_64 | NSIS `.exe` / `.msi` |
 | macOS | `.dmg`（Apple Silicon / Intel） |
+
+Arch Linux 安装：
+
+```bash
+sudo pacman -U rypora-0.1.0-1-x86_64.pkg.tar.zst
+```
 
 构建产物未做代码签名。macOS 首次打开需要右键 → “打开”；Windows 可能弹出 SmartScreen 提示。
 
@@ -59,8 +66,12 @@ Rypora 是一个本地优先的 Markdown 工作区：打开一个文件夹就能
 Linux 还需要：
 
 ```bash
+# Debian / Ubuntu
 sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
   librsvg2-dev patchelf
+
+# Arch Linux
+sudo pacman -S --needed webkit2gtk-4.1 gtk3 libsoup3 base-devel
 ```
 
 ```bash
@@ -77,6 +88,13 @@ npm run tauri build
 ```
 
 Linux 下会生成 `.deb`、`.rpm` 和 `.AppImage`，位置在 `src-tauri/target/release/bundle/`。
+
+Arch 的 pacman 包：
+
+```bash
+VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+bash packaging/arch/build-pkg.sh "$VERSION" src-tauri/target/release/rypora
+```
 
 ## 测试
 
