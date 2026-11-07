@@ -5,11 +5,12 @@
   import { save as saveDialog, ask } from "@tauri-apps/plugin-dialog";
   import { workspace } from "./lib/state/workspace.svelte";
   import { tabs } from "./lib/state/tabs.svelte";
-  import { loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
-  import type { AppConfig } from "./lib/types";
+  import { indexStatus, loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
+  import type { AppConfig, IndexStatus, TextHit } from "./lib/types";
   import { resolveRelative } from "./lib/utils/paths";
   import FileTree from "./lib/sidebar/FileTree.svelte";
-  import QuickOpen from "./lib/palette/QuickOpen.svelte";
+  import SearchPalette from "./lib/search/SearchPalette.svelte";
+  import { searchState } from "./lib/state/search.svelte";
   import TabBar from "./lib/tabs/TabBar.svelte";
   import Editor from "./lib/editor/Editor.svelte";
   import StatusBar from "./lib/StatusBar.svelte";
@@ -25,6 +26,7 @@
   let unlisten: UnlistenFn | undefined;
   let unlistenClose: UnlistenFn | undefined;
   let unlistenWatch: UnlistenFn | undefined;
+  let unlistenIndex: UnlistenFn | undefined;
 
   const folderName = $derived(
     workspace.root ? (workspace.root.split("/").pop() ?? workspace.root) : "Rypora",
@@ -45,6 +47,10 @@
 
   function openFile(path: string): void {
     void tabs.open(path);
+  }
+
+  function openText(hit: TextHit): void {
+    void tabs.openAt(hit.path, hit.line, hit.term);
   }
 
   function refreshAll(): void {
@@ -177,6 +183,10 @@
 
     restored = true;
 
+    unlistenIndex = await listen<IndexStatus>("index://progress", (event) => {
+      searchState.setStatus(event.payload);
+    });
+
     unlisten = await listen<{ paths: string[] }>("fs://changed", (event) => {
       void workspace.refresh();
       void refreshIndex();
@@ -246,6 +256,7 @@
     document.removeEventListener("visibilitychange", saveActive);
     unlisten?.();
     unlistenWatch?.();
+    unlistenIndex?.();
     unlistenClose?.();
   });
 
@@ -340,10 +351,11 @@
   </main>
 </div>
 
-<QuickOpen
+<SearchPalette
   visible={paletteVisible}
   onClose={() => (paletteVisible = false)}
-  onSelect={openFile}
+  onSelectFile={openFile}
+  onSelectText={openText}
 />
 
 {#if discardPath}
