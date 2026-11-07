@@ -55,3 +55,57 @@ describe("highlightCodeBlocks", () => {
     expect(root.querySelector(".tok-keyword, .tok-variableName, .tok-number")).not.toBeNull();
   });
 });
+
+import { afterEach, beforeEach } from "vitest";
+import { buildPrintDocument, printDocument } from "../src/lib/print/document";
+
+describe("print document lifecycle", () => {
+  beforeEach(() => {
+    document.title = "Original";
+    document.documentElement.classList.remove("printing");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.querySelectorAll(".print-root").forEach((node) => node.remove());
+    document.documentElement.classList.remove("printing");
+    document.title = "Original";
+  });
+
+  test("builds a print root with highlighted code", async () => {
+    const article = await buildPrintDocument("```js\nconst a = 1;\n```", "/w/a.md");
+    expect(article.className).toBe("print-root");
+    expect(article.querySelector(".tok-keyword, .tok-variableName")).not.toBeNull();
+  });
+
+  test("prints, then cleans up on afterprint", async () => {
+    const printed = vi.spyOn(window, "print").mockImplementation(() => {});
+    const article = await buildPrintDocument("# Note", "/w/a.md");
+
+    const ok = await printDocument(article, "Note");
+
+    expect(ok).toBe(true);
+    expect(printed).toHaveBeenCalledTimes(1);
+    expect(document.body.contains(article)).toBe(true);
+    expect(document.documentElement.classList.contains("printing")).toBe(true);
+    expect(document.title).toBe("Note");
+
+    window.dispatchEvent(new Event("afterprint"));
+
+    expect(document.body.contains(article)).toBe(false);
+    expect(document.documentElement.classList.contains("printing")).toBe(false);
+    expect(document.title).toBe("Original");
+  });
+
+  test("cleans up when printing throws", async () => {
+    vi.spyOn(window, "print").mockImplementation(() => {
+      throw new Error("no printer");
+    });
+    const article = await buildPrintDocument("# Note", "/w/a.md");
+
+    expect(await printDocument(article, "Note")).toBe(false);
+    expect(document.body.contains(article)).toBe(false);
+    expect(document.documentElement.classList.contains("printing")).toBe(false);
+    expect(document.title).toBe("Original");
+  });
+});
