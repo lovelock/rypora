@@ -1,11 +1,21 @@
+function lastSeparator(path: string): number {
+  return Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+}
+
 export function basename(path: string): string {
-  const index = path.lastIndexOf("/");
-  return index >= 0 ? path.slice(index + 1) : path;
+  return path.slice(lastSeparator(path) + 1);
 }
 
 export function parentDirectory(path: string): string {
-  const index = path.lastIndexOf("/");
-  return index > 0 ? path.slice(0, index) : "/";
+  const index = lastSeparator(path);
+  if (index <= 0) {
+    return "/";
+  }
+  const parent = path.slice(0, index);
+  if (/^[A-Za-z]:$/.test(parent)) {
+    return parent + path[index];
+  }
+  return parent;
 }
 
 export function resolveRelative(docPath: string, href: string): string {

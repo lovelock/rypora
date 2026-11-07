@@ -51,14 +51,24 @@ describe("matchShortcut", () => {
 
 describe("newEntryParent", () => {
   test("uses the workspace root when nothing is selected", () => {
-    expect(newEntryParent("/w", null, false)).toBe("/w");
+    expect(newEntryParent("/w", null)).toBe("/w");
+  });
+
+  test("uses the workspace root when the selection is not in the tree", () => {
+    expect(newEntryParent("/w", null)).toBe("/w");
   });
 
   test("creates inside a selected directory", () => {
-    expect(newEntryParent("/w", "/w/notes", true)).toBe("/w/notes");
+    expect(newEntryParent("/w", { path: "/w/notes", isDir: true })).toBe("/w/notes");
   });
 
   test("creates beside a selected file", () => {
-    expect(newEntryParent("/w", "/w/notes/a.md", false)).toBe("/w/notes");
+    expect(newEntryParent("/w", { path: "/w/notes/a.md", isDir: false })).toBe("/w/notes");
+  });
+
+  test("handles Windows paths", () => {
+    expect(newEntryParent("C:\\w", { path: "C:\\w\\notes\\a.md", isDir: false })).toBe(
+      "C:\\w\\notes",
+    );
   });
 });

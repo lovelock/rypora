@@ -147,7 +147,7 @@
       return workspace.root!;
     }
     const node = findNode(tree, selected);
-    return newEntryParent(workspace.root!, selected, node?.isDir ?? false);
+    return newEntryParent(workspace.root!, node ? { path: node.path, isDir: node.isDir } : null);
   }
 
   function handleCommand(event: Event): void {

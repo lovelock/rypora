@@ -32,13 +32,14 @@ export function matchShortcut(event: ShortcutEvent, platform: Platform): Shortcu
   return null;
 }
 
-export function newEntryParent(
-  root: string,
-  selectedPath: string | null,
-  selectedIsDir: boolean,
-): string {
-  if (!selectedPath) {
+export interface SelectedEntry {
+  path: string;
+  isDir: boolean;
+}
+
+export function newEntryParent(root: string, selected: SelectedEntry | null): string {
+  if (!selected) {
     return root;
   }
-  return selectedIsDir ? selectedPath : parentDirectory(selectedPath);
+  return selected.isDir ? selected.path : parentDirectory(selected.path);
 }

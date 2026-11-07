@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parentDirectory, resolveRelative } from "../src/lib/utils/paths";
+import { basename, parentDirectory, resolveRelative } from "../src/lib/utils/paths";
 
 describe("resolveRelative", () => {
   test("resolves parent directories", () => {
@@ -32,5 +32,16 @@ describe("parentDirectory", () => {
 
   test("returns root for top-level paths", () => {
     expect(parentDirectory("/a.md")).toBe("/");
+  });
+
+  test("handles Windows separators", () => {
+    expect(parentDirectory("C:\\w\\notes\\a.md")).toBe("C:\\w\\notes");
+    expect(parentDirectory("C:\\a.md")).toBe("C:\\");
+  });
+});
+
+describe("basename", () => {
+  test("handles Windows separators", () => {
+    expect(basename("C:\\w\\notes\\a.md")).toBe("a.md");
   });
 });
