@@ -48,6 +48,7 @@
     if (currentPath !== path || view.state !== state) {
       currentPath = path;
       view.setState(state);
+      tabs.syncCursor(path, state);
       const scroll = untrack(() => tabs.scrollOf(path));
       requestAnimationFrame(() => {
         if (!view) {

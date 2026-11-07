@@ -2,6 +2,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { baseExtensions } from "../editor/setup";
 import { documentPath } from "../editor/live-preview";
+import { countWords } from "../editor/format-commands";
 import * as ipc from "../ipc";
 import type { Eol, FileContent, TabState } from "../types";
 import { basename } from "../utils/paths";
@@ -24,6 +25,9 @@ export class TabsStore {
   status = $state("");
   error = $state<string | null>(null);
   loadedVersion = $state(0);
+  cursorLine = $state(1);
+  cursorColumn = $state(1);
+  wordCount = $state(0);
 
   private states = new Map<string, EditorState>();
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -142,6 +146,17 @@ export class TabsStore {
       tab.dirty = true;
     }
     this.scheduleSave(path);
+  }
+
+  syncCursor(path: string, state: EditorState): void {
+    if (this.activePath !== path) {
+      return;
+    }
+    const head = state.selection.main.head;
+    const line = state.doc.lineAt(head);
+    this.cursorLine = line.number;
+    this.cursorColumn = head - line.from + 1;
+    this.wordCount = countWords(state.doc.toString());
   }
 
   capture(path: string, state: EditorState, scrollTop: number): void {
@@ -278,6 +293,9 @@ export class TabsStore {
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             this.noteEdit(path, update.state);
+          }
+          if (update.docChanged || update.selectionSet) {
+            this.syncCursor(path, update.state);
           }
         }),
       ],

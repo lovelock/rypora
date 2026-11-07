@@ -11,6 +11,7 @@
   import QuickOpen from "./lib/palette/QuickOpen.svelte";
   import TabBar from "./lib/tabs/TabBar.svelte";
   import Editor from "./lib/editor/Editor.svelte";
+  import StatusBar from "./lib/StatusBar.svelte";
 
   let paletteVisible = $state(false);
   let theme = $state("system");
@@ -211,6 +212,7 @@
         </div>
       {/if}
       <Editor />
+      <StatusBar />
     {:else if workspace.root}
       <div class="welcome">
         <p>从左侧选择文件，或按 <kbd>Ctrl</kbd> + <kbd>P</kbd> 搜索。</p>
