@@ -41,6 +41,16 @@ pub struct IndexStatus {
 }
 
 impl IndexStatus {
+    pub fn unavailable(generation: u64) -> Self {
+        Self {
+            phase: "unavailable".to_string(),
+            indexed: 0,
+            total: 0,
+            generation,
+            available: false,
+        }
+    }
+
     pub fn new(generation: u64) -> Self {
         Self {
             phase: "idle".to_string(),

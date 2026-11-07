@@ -19,7 +19,11 @@ pub fn run() {
                 .path()
                 .app_config_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."));
-            app.manage(commands::AppState::new(config_dir));
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("."));
+            app.manage(commands::AppState::new(config_dir, app_data_dir));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -34,6 +38,9 @@ pub fn run() {
             commands::write_file,
             commands::save_file_as,
             commands::search_files,
+            commands::search_text,
+            commands::index_status,
+            commands::reindex_workspace,
             commands::load_config_command,
             commands::save_config_command,
             commands::reveal_item,

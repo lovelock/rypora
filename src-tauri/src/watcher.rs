@@ -10,6 +10,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
 use crate::error::WorkspaceError;
+use crate::index::service::IndexService;
+use crate::index::worker::IndexCommand;
 
 pub const SELF_WRITE_WINDOW: Duration = Duration::from_secs(1);
 
@@ -49,6 +51,7 @@ pub fn start(
     root: &Path,
     debouncer: &Mutex<Option<DebouncerHandle>>,
     self_writes: SelfWrites,
+    index: Option<IndexService>,
 ) -> Result<(), WorkspaceError> {
     if let Some(previous) = debouncer.lock().take() {
         previous.stop_nonblocking();
@@ -90,6 +93,11 @@ pub fn start(
             }
 
             if !paths.is_empty() {
+                if let Some(service) = &index {
+                    for path in &paths {
+                        service.enqueue(IndexCommand::RefreshPath(PathBuf::from(path)));
+                    }
+                }
                 let _ = app.emit("fs://changed", FsChanged { paths });
             }
         },
