@@ -462,7 +462,10 @@ mod tests {
         fs::write(&file, "# 我的笔记本\n\n正文内容").unwrap();
 
         handle.sender.send(IndexCommand::RefreshPath(file)).unwrap();
-        wait_until(|| reader.searcher().num_docs() == 1);
+        wait_until(|| {
+            reader.searcher().num_docs() == 1
+                && load_manifest(temp.path()).entries.len() == 1
+        });
 
         let _ = index;
         assert_eq!(load_manifest(temp.path()).entries.len(), 1);
