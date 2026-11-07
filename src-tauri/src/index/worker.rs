@@ -60,6 +60,10 @@ pub struct WorkerHandle {
 }
 
 impl WorkerHandle {
+    pub fn stop(self) {
+        let _ = self.sender.send(IndexCommand::Shutdown);
+    }
+
     pub fn shutdown(mut self) {
         let _ = self.sender.send(IndexCommand::Shutdown);
         if let Some(join) = self.join.take() {

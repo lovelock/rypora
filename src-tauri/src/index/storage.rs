@@ -10,7 +10,7 @@ use super::schema::{
 };
 use crate::error::WorkspaceError;
 
-pub const META_FILE: &str = "meta.json";
+pub const META_FILE: &str = "rypora-meta.json";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
