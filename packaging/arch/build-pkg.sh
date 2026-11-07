@@ -9,6 +9,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/rypora-pkg.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
+
 PKG="$WORK/pkg"
 install -Dm755 "$BIN" "$PKG/usr/bin/rypora"
 install -Dm644 "$ROOT/packaging/arch/rypora.desktop" \
