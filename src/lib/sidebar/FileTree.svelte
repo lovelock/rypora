@@ -152,7 +152,7 @@
 
   function handleCommand(event: Event): void {
     const command = (event as CustomEvent<{ command?: string }>).detail?.command;
-    if (!workspace.root || !command) {
+    if (!workspace.root || !command || prompt || deleteTarget || renamingPath) {
       return;
     }
     if (command === "new-file" || command === "new-folder") {
