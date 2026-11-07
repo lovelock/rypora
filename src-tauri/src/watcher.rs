@@ -21,6 +21,11 @@ pub struct FsChanged {
     pub paths: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct WatchError {
+    pub message: String,
+}
+
 pub fn should_suppress(map: &mut HashMap<PathBuf, Instant>, path: &Path, now: Instant) -> bool {
     match map.get(path).copied() {
         Some(stamp) if now.duration_since(stamp) < SELF_WRITE_WINDOW => true,
@@ -54,8 +59,17 @@ pub fn start(
         Duration::from_millis(250),
         None,
         move |result: DebounceEventResult| {
-            let Ok(events) = result else {
-                return;
+            let events = match result {
+                Ok(events) => events,
+                Err(errors) => {
+                    let message = errors
+                        .iter()
+                        .map(|error| error.to_string())
+                        .collect::<Vec<_>>()
+                        .join("; ");
+                    let _ = app.emit("fs://watch-error", WatchError { message });
+                    return;
+                }
             };
 
             let mut paths: Vec<String> = Vec::new();

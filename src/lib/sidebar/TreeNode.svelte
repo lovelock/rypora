@@ -134,6 +134,11 @@
     oncontextmenu={(event) => onMenu(event, node)}
     draggable="true"
     ondragstart={startDrag}
+    ondragover={(event) => event.preventDefault()}
+    ondrop={(event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    }}
   >
     <span class="dot">·</span>
     <span class="name">{node.name}</span>

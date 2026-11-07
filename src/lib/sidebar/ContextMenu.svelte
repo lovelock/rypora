@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ContextAction, FileNode } from "../types";
+  import { workspace } from "../state/workspace.svelte";
 
   let {
     x,
@@ -14,6 +15,8 @@
     onAction: (action: ContextAction) => void;
     onClose: () => void;
   } = $props();
+
+  const isRoot = $derived(node.path === workspace.root);
 </script>
 
 <div
@@ -27,10 +30,12 @@
     <button role="menuitem" onclick={() => onAction("new-folder")}>新建文件夹</button>
     <div class="sep"></div>
   {/if}
-  <button role="menuitem" onclick={() => onAction("rename")}>重命名</button>
-  <button role="menuitem" onclick={() => onAction("delete")}>删除</button>
-  <div class="sep"></div>
-  <button role="menuitem" onclick={() => onAction("reveal")}>在文件管理器中显示</button>
+  {#if !isRoot}
+    <button role="menuitem" onclick={() => onAction("rename")}>重命名</button>
+    <button role="menuitem" onclick={() => onAction("delete")}>删除</button>
+    <div class="sep"></div>
+    <button role="menuitem" onclick={() => onAction("reveal")}>在文件管理器中显示</button>
+  {/if}
 </div>
 <button class="backdrop" aria-label="关闭菜单" onclick={onClose}></button>
 

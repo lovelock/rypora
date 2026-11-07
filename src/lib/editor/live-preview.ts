@@ -9,7 +9,7 @@ import {
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { computeInlineRanges } from "./preview-model";
-import { CodeBlockWidget, ImageWidget, RuleWidget, TaskWidget } from "./widgets";
+import { BulletWidget, CodeBlockWidget, ImageWidget, RuleWidget, TaskWidget } from "./widgets";
 import { resolveRelative } from "../utils/paths";
 
 export const documentPath = Facet.define<string, string>({
@@ -122,7 +122,7 @@ function build(view: EditorView): BuiltDecorations {
   const replace = (
     from: number,
     to: number,
-    widget: ImageWidget | TaskWidget,
+    widget: ImageWidget | TaskWidget | BulletWidget,
   ): void => {
     if (to <= from) {
       return;
@@ -231,7 +231,7 @@ function build(view: EditorView): BuiltDecorations {
                 attributes: { "data-href": url },
               }).range(marks[0].to, marks[1].from),
             );
-            return false;
+            return true;
           }
 
           case "Blockquote": {
@@ -244,20 +244,31 @@ function build(view: EditorView): BuiltDecorations {
                 ),
               );
             }
-            const mark = ref.node.getChild("QuoteMark");
-            if (mark && !activeLines.has(start.number)) {
-              hide(mark.from, mark.to);
-            }
             return true;
           }
 
+          case "QuoteMark": {
+            if (!activeLines.has(state.doc.lineAt(ref.from).number)) {
+              hide(ref.from, ref.to);
+            }
+            return false;
+          }
+
           case "ListMark": {
-            decorations.push(
-              Decoration.mark({ class: "cm-preview-listmark" }).range(
-                ref.from,
-                ref.to,
-              ),
-            );
+            const raw = state.doc.sliceString(ref.from, ref.to);
+            if (
+              !activeLines.has(state.doc.lineAt(ref.from).number) &&
+              /^[-*+]$/.test(raw)
+            ) {
+              replace(ref.from, ref.to, new BulletWidget());
+            } else {
+              decorations.push(
+                Decoration.mark({ class: "cm-preview-listmark" }).range(
+                  ref.from,
+                  ref.to,
+                ),
+              );
+            }
             return false;
           }
 

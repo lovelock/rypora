@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
 use crate::error::WorkspaceError;
+use crate::tree::MARKDOWN_EXTENSIONS;
 
 pub const MAX_FILE_SIZE: u64 = 2 * 1024 * 1024;
 
@@ -33,6 +34,22 @@ pub fn validate_name(name: &str) -> Result<(), WorkspaceError> {
     Ok(())
 }
 
+fn ensure_markdown_name(name: &str) -> Result<String, WorkspaceError> {
+    match Path::new(name).extension().and_then(|value| value.to_str()) {
+        None => Ok(format!("{name}.md")),
+        Some(extension) => {
+            let extension = extension.to_ascii_lowercase();
+            if MARKDOWN_EXTENSIONS.contains(&extension.as_str()) {
+                Ok(name.to_string())
+            } else {
+                Err(WorkspaceError::InvalidName(format!(
+                    "{name}: only markdown files are supported"
+                )))
+            }
+        }
+    }
+}
+
 pub fn read_file(path: &Path) -> Result<FileContent, WorkspaceError> {
     let metadata = fs::metadata(path)?;
     if !metadata.is_file() {
@@ -44,7 +61,7 @@ pub fn read_file(path: &Path) -> Result<FileContent, WorkspaceError> {
 
     let bytes = fs::read(path)?;
     let text = String::from_utf8(bytes)
-        .map_err(|_| WorkspaceError::Io(format!("{} is not valid UTF-8", path.display())))?;
+        .map_err(|_| WorkspaceError::InvalidUtf8(path.display().to_string()))?;
 
     let eol = if text.contains("\r\n") {
         Eol::Crlf
@@ -97,16 +114,38 @@ pub fn write_file_atomic(
     Ok(mtime_ms(&updated))
 }
 
-pub fn create_entry(parent: &Path, name: &str, is_dir: bool) -> Result<PathBuf, WorkspaceError> {
-    validate_name(name)?;
+pub fn write_new_file(path: &Path, text: &str, eol: Eol) -> Result<u64, WorkspaceError> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| WorkspaceError::InvalidName(path.display().to_string()))?;
+    if let Some(name) = path.file_name() {
+        validate_name(&name.to_string_lossy())?;
+    }
+
+    let payload = match eol {
+        Eol::Crlf => text.replace('\n', "\r\n"),
+        Eol::Lf => text.to_string(),
+    };
+
+    let mut temp = tempfile::NamedTempFile::new_in(parent)?;
+    temp.write_all(payload.as_bytes())?;
+    temp.as_file().sync_all()?;
+    temp.persist(path)
+        .map_err(|error| WorkspaceError::Io(error.to_string()))?;
+
+    let metadata = fs::metadata(path)?;
+    Ok(mtime_ms(&metadata))
+}
+
+pub fn create_entry(parent: &Path, name: &str, is_dir: bool) -> Result<PathBuf, WorkspaceError> {    validate_name(name)?;
     if !parent.is_dir() {
         return Err(WorkspaceError::NotFound(parent.display().to_string()));
     }
 
-    let final_name = if is_dir || Path::new(name).extension().is_some() {
+    let final_name = if is_dir {
         name.to_string()
     } else {
-        format!("{name}.md")
+        ensure_markdown_name(name)?
     };
 
     let target = parent.join(&final_name);
@@ -124,10 +163,16 @@ pub fn create_entry(parent: &Path, name: &str, is_dir: bool) -> Result<PathBuf, 
 
 pub fn rename_entry(path: &Path, new_name: &str) -> Result<PathBuf, WorkspaceError> {
     validate_name(new_name)?;
+    let is_file = fs::metadata(path)?.is_file();
+    let new_name = if is_file {
+        ensure_markdown_name(new_name)?
+    } else {
+        new_name.to_string()
+    };
     let parent = path
         .parent()
         .ok_or_else(|| WorkspaceError::NotFound(path.display().to_string()))?;
-    let target = parent.join(new_name);
+    let target = parent.join(&new_name);
     if target.exists() {
         return Err(WorkspaceError::Conflict(target.display().to_string()));
     }
@@ -142,8 +187,7 @@ pub fn delete_entry(path: &Path) -> Result<(), WorkspaceError> {
     trash::delete(path).map_err(|error| WorkspaceError::Io(error.to_string()))
 }
 
-pub fn move_entry(src: &Path, dest_dir: &Path) -> Result<PathBuf, WorkspaceError> {
-    if !dest_dir.is_dir() {
+pub fn move_entry(src: &Path, dest_dir: &Path) -> Result<PathBuf, WorkspaceError> {    if !dest_dir.is_dir() {
         return Err(WorkspaceError::NotFound(dest_dir.display().to_string()));
     }
     let file_name = src
@@ -235,6 +279,21 @@ mod tests {
 
         let again = create_entry(dir.path(), "note", false);
         assert!(matches!(again, Err(WorkspaceError::Conflict(_))));
+    }
+
+    #[test]
+    fn rejects_non_markdown_file_names() {
+        let dir = tempdir().unwrap();
+        let result = create_entry(dir.path(), "note.txt", false);
+        assert!(matches!(result, Err(WorkspaceError::InvalidName(_))));
+    }
+
+    #[test]
+    fn writes_new_files_and_preserves_crlf() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("saved.md");
+        write_new_file(&path, "# hi\n", Eol::Crlf).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"# hi\r\n");
     }
 
     #[test]

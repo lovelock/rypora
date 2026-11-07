@@ -62,4 +62,30 @@ describe("computeInlineRanges", () => {
   test("leaves plain paragraphs alone", () => {
     expect(run("普通段落")).toEqual([]);
   });
+
+  test("renders nested emphasis inside headings", () => {
+    const ranges = run("## **粗体** 标题");
+    expect(ranges).toContainEqual({ kind: "hide", from: 0, to: 3 });
+    expect(ranges).toContainEqual({ kind: "hide", from: 3, to: 5 });
+    expect(ranges).toContainEqual({ kind: "hide", from: 7, to: 9 });
+    expect(ranges).toContainEqual({
+      kind: "style",
+      from: 5,
+      to: 7,
+      cls: "cm-preview-strong",
+    });
+  });
+
+  test("renders nested emphasis inside strong", () => {
+    const ranges = run("**a *b* c**");
+    expect(ranges).toContainEqual({ kind: "hide", from: 0, to: 2 });
+    expect(ranges).toContainEqual({ kind: "hide", from: 4, to: 5 });
+    expect(ranges).toContainEqual({ kind: "hide", from: 6, to: 7 });
+    expect(ranges).toContainEqual({
+      kind: "style",
+      from: 5,
+      to: 6,
+      cls: "cm-preview-em",
+    });
+  });
 });

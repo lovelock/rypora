@@ -132,6 +132,10 @@ export const editorTheme = EditorView.theme({
     color: "var(--accent)",
     fontWeight: "700",
   },
+  ".cm-preview-bullet": {
+    color: "var(--accent)",
+    fontWeight: "700",
+  },
 });
 
 export const markdownHighlight = HighlightStyle.define([

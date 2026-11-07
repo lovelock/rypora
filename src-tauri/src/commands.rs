@@ -120,7 +120,7 @@ pub fn create_entry(
     is_dir: bool,
 ) -> Result<String, String> {
     let path = workspace::create_entry(Path::new(&parent), &name, is_dir).map_err(message)?;
-    rebuild_index(&state)?;
+    let _ = rebuild_index(&state);
     Ok(path.to_string_lossy().to_string())
 }
 
@@ -131,14 +131,15 @@ pub fn rename_entry(
     new_name: String,
 ) -> Result<String, String> {
     let renamed = workspace::rename_entry(Path::new(&path), &new_name).map_err(message)?;
-    rebuild_index(&state)?;
+    let _ = rebuild_index(&state);
     Ok(renamed.to_string_lossy().to_string())
 }
 
 #[tauri::command]
 pub fn delete_entry(state: State<'_, AppState>, path: String) -> Result<(), String> {
     workspace::delete_entry(Path::new(&path)).map_err(message)?;
-    rebuild_index(&state)
+    let _ = rebuild_index(&state);
+    Ok(())
 }
 
 #[tauri::command]
@@ -148,7 +149,7 @@ pub fn move_entry(
     dest_dir: String,
 ) -> Result<String, String> {
     let moved = workspace::move_entry(Path::new(&src), Path::new(&dest_dir)).map_err(message)?;
-    rebuild_index(&state)?;
+    let _ = rebuild_index(&state);
     Ok(moved.to_string_lossy().to_string())
 }
 
@@ -167,8 +168,32 @@ pub fn write_file(
 ) -> Result<u64, String> {
     let target = PathBuf::from(&path);
     watcher::mark_self_write(&state.self_writes, &target);
+    if let Some(parent) = target.parent() {
+        watcher::mark_self_write(&state.self_writes, parent);
+    }
     let result = workspace::write_file_atomic(&target, &text, eol, expected_mtime_ms).map_err(message);
     watcher::mark_self_write(&state.self_writes, &target);
+    if let Some(parent) = target.parent() {
+        watcher::mark_self_write(&state.self_writes, parent);
+    }
+    result
+}
+
+#[tauri::command]
+pub fn save_file_as(
+    state: State<'_, AppState>,
+    path: String,
+    text: String,
+    eol: Eol,
+) -> Result<u64, String> {
+    let target = PathBuf::from(&path);
+    if let Some(parent) = target.parent() {
+        watcher::mark_self_write(&state.self_writes, parent);
+    }
+    let result = workspace::write_new_file(&target, &text, eol).map_err(message);
+    if let Some(parent) = target.parent() {
+        watcher::mark_self_write(&state.self_writes, parent);
+    }
     result
 }
 

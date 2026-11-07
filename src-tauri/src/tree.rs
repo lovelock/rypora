@@ -51,9 +51,15 @@ pub fn scan_tree(root: &Path) -> Result<FileNode, WorkspaceError> {
 }
 
 fn scan_children(dir: &Path, out: &mut Vec<FileNode>) -> Result<(), WorkspaceError> {
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(_) => return Ok(()),
+    };
+
+    for entry in entries.flatten() {
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
         if file_type.is_symlink() {
             continue;
         }

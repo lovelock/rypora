@@ -57,6 +57,28 @@ describe("livePreview", () => {
     expect(parent.querySelector(".cm-preview-codeblock")).not.toBeNull();
     expect(parent.querySelector(".cm-preview-rule")).not.toBeNull();
     expect(parent.querySelector(".cm-preview-task")).not.toBeNull();
+    expect(parent.querySelector(".cm-preview-bullet")).not.toBeNull();
+
+    view.destroy();
+    parent.remove();
+  });
+
+  test("hides every blockquote marker", () => {
+    const parent = document.createElement("div");
+    document.body.appendChild(parent);
+
+    const doc = "> a\n> b\n\nplain";
+    const state = EditorState.create({
+      doc,
+      selection: { anchor: doc.length },
+      extensions: [markdown({ base: markdownLanguage }), livePreview()],
+    });
+    ensureSyntaxTree(state, state.doc.length, 1000);
+
+    const view = new EditorView({ state, parent });
+
+    expect(parent.querySelectorAll(".cm-preview-quote").length).toBe(2);
+    expect(parent.querySelector(".cm-content")?.textContent ?? "").not.toContain(">");
 
     view.destroy();
     parent.remove();

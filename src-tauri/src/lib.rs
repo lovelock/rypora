@@ -31,6 +31,7 @@ pub fn run() {
             commands::move_entry,
             commands::read_file,
             commands::write_file,
+            commands::save_file_as,
             commands::search_files,
             commands::load_config_command,
             commands::save_config_command,

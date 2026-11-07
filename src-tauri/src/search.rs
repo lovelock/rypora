@@ -37,7 +37,9 @@ impl FileIndex {
             .filter_entry(keep_entry);
 
         for item in walker {
-            let entry = item.map_err(|error| WorkspaceError::Io(error.to_string()))?;
+            let Ok(entry) = item else {
+                continue;
+            };
             if !entry.file_type().is_file() || !is_markdown(entry.path()) {
                 continue;
             }

@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { workspace } from "./lib/state/workspace.svelte";
   import { tabs } from "./lib/state/tabs.svelte";
   import { loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
@@ -12,14 +13,17 @@
   import TabBar from "./lib/tabs/TabBar.svelte";
   import Editor from "./lib/editor/Editor.svelte";
   import StatusBar from "./lib/StatusBar.svelte";
+  import ConfirmDialog from "./lib/ui/ConfirmDialog.svelte";
 
   let paletteVisible = $state(false);
   let theme = $state("system");
   let restored = $state(false);
   let sidebarWidth = $state(260);
   let fontSize = $state(16);
+  let discardPath = $state<string | null>(null);
   let unlisten: UnlistenFn | undefined;
   let unlistenClose: UnlistenFn | undefined;
+  let unlistenWatch: UnlistenFn | undefined;
 
   const folderName = $derived(
     workspace.root ? (workspace.root.split("/").pop() ?? workspace.root) : "Rypora",
@@ -40,6 +44,50 @@
 
   function openFile(path: string): void {
     void tabs.open(path);
+  }
+
+  function refreshAll(): void {
+    void workspace.refresh();
+    void refreshIndex();
+  }
+
+  function buildConfig(): AppConfig {
+    return {
+      lastWorkspace: workspace.root,
+      tabs: tabs.snapshot(),
+      activeTab: tabs.activePath,
+      theme,
+      sidebarWidth,
+      fontSize,
+    };
+  }
+
+  async function saveActiveAs(): Promise<void> {
+    const tab = tabs.active;
+    if (!tab) {
+      return;
+    }
+    const selected = await saveDialog({
+      title: "另存为",
+      defaultPath: tab.path,
+      filters: [{ name: "Markdown", extensions: ["md", "markdown"] }],
+    });
+    if (typeof selected === "string") {
+      await tabs.saveAs(tab.path, selected);
+    }
+  }
+
+  function requestForceClose(): void {
+    if (tabs.activePath) {
+      discardPath = tabs.activePath;
+    }
+  }
+
+  function confirmForceClose(): void {
+    if (discardPath) {
+      tabs.forceClose(discardPath);
+      discardPath = null;
+    }
   }
 
   function handleOpenLink(event: Event): void {
@@ -73,6 +121,12 @@
       return;
     }
 
+    if (modifier && event.shiftKey && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      void saveActiveAs();
+      return;
+    }
+
     if (modifier && event.key.toLowerCase() === "s") {
       event.preventDefault();
       void tabs.saveActive();
@@ -98,8 +152,14 @@
     }
   }
 
+  function saveActive(): void {
+    void tabs.saveActive();
+  }
+
   onMount(async () => {
     window.addEventListener("rypora:open-link", handleOpenLink);
+    window.addEventListener("blur", saveActive);
+    document.addEventListener("visibilitychange", saveActive);
 
     const config = await loadConfig();
     theme = config.theme;
@@ -122,18 +182,37 @@
       void tabs.handleFsChanged(event.payload.paths);
     });
 
-    unlistenClose = await getCurrentWindow().onCloseRequested(async () => {
+    unlistenWatch = await listen<{ message: string }>("fs://watch-error", (event) => {
+      workspace.error = `文件监听失败：${event.payload.message}`;
+    });
+
+    unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
+      let failed = false;
       for (const tab of [...tabs.tabs]) {
-        if (tab.dirty && !tab.missing) {
-          await tabs.save(tab.path, true);
+        if (tab.dirty) {
+          if (tab.missing) {
+            failed = true;
+            continue;
+          }
+          const ok = await tabs.save(tab.path, true);
+          if (!ok) {
+            failed = true;
+          }
         }
+      }
+      await saveConfig(buildConfig());
+      if (failed) {
+        event.preventDefault();
       }
     });
   });
 
   onDestroy(() => {
     window.removeEventListener("rypora:open-link", handleOpenLink);
+    window.removeEventListener("blur", saveActive);
+    document.removeEventListener("visibilitychange", saveActive);
     unlisten?.();
+    unlistenWatch?.();
     unlistenClose?.();
   });
 
@@ -150,14 +229,7 @@
     if (!restored) {
       return;
     }
-    const config: AppConfig = {
-      lastWorkspace: workspace.root,
-      tabs: tabs.snapshot(),
-      activeTab: tabs.activePath,
-      theme,
-      sidebarWidth,
-      fontSize,
-    };
+    const config = buildConfig();
     const timer = setTimeout(() => {
       void saveConfig(config);
     }, 500);
@@ -171,6 +243,7 @@
   <aside class="sidebar">
     <header class="sidebar-head">
       <span class="workspace-name" title={workspace.root ?? ""}>{folderName}</span>
+      <button class="ghost" title="刷新" onclick={refreshAll}>刷新</button>
       <button class="ghost" title="切换主题" onclick={cycleTheme}>
         {theme === "system" ? "自动" : theme === "light" ? "浅色" : "深色"}
       </button>
@@ -195,6 +268,12 @@
   <main class="main">
     {#if tabs.tabs.length > 0}
       <TabBar />
+      {#if tabs.error}
+        <div class="banner">
+          <span>{tabs.error}</span>
+          <button onclick={() => (tabs.error = null)}>知道了</button>
+        </div>
+      {/if}
       {#if tabs.active?.conflict}
         <div class="banner">
           <span>文件已在磁盘上被修改。</span>
@@ -207,8 +286,9 @@
         </div>
       {:else if tabs.active?.missing}
         <div class="banner">
-          <span>文件已从磁盘删除，编辑器内容不会自动写回。</span>
-          <button onclick={() => tabs.activePath && tabs.close(tabs.activePath)}>关闭标签</button>
+          <span>文件已从磁盘删除，编辑内容尚未保存。</span>
+          <button onclick={saveActiveAs}>另存为</button>
+          <button onclick={requestForceClose}>强制关闭</button>
         </div>
       {/if}
       <Editor />
@@ -232,3 +312,14 @@
   onClose={() => (paletteVisible = false)}
   onSelect={openFile}
 />
+
+{#if discardPath}
+  <ConfirmDialog
+    title="强制关闭"
+    message="关闭后，这个标签里未保存的内容会丢失。确定继续？"
+    confirmLabel="丢弃并关闭"
+    danger
+    onConfirm={confirmForceClose}
+    onCancel={() => (discardPath = null)}
+  />
+{/if}

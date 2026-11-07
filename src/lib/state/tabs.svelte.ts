@@ -17,6 +17,11 @@ export interface Tab {
   saving: boolean;
   conflict: boolean;
   scrollTop: number;
+  error: string | null;
+}
+
+function isUnder(path: string, parent: string): boolean {
+  return path === parent || path.startsWith(`${parent}/`);
 }
 
 export class TabsStore {
@@ -43,6 +48,13 @@ export class TabsStore {
 
   scrollOf(path: string): number {
     return this.tabs.find((tab) => tab.path === path)?.scrollTop ?? 0;
+  }
+
+  setScroll(path: string, top: number): void {
+    const tab = this.find(path);
+    if (tab) {
+      tab.scrollTop = top;
+    }
   }
 
   find(path: string): Tab | undefined {
@@ -72,38 +84,40 @@ export class TabsStore {
     }
   }
 
-  async close(path: string): Promise<void> {
+  async close(path: string): Promise<boolean> {
     const tab = this.find(path);
     if (!tab) {
-      return;
+      return true;
     }
-    if (tab.dirty && !tab.missing) {
-      await this.save(path, true);
-    }
-
-    const index = this.tabs.findIndex((entry) => entry.path === path);
-    const remaining = this.tabs.filter((entry) => entry.path !== path);
-    this.tabs = remaining;
-    this.states.delete(path);
-    this.cancelTimer(path);
-
-    if (this.activePath === path) {
-      const next = remaining[Math.min(index, remaining.length - 1)];
-      this.activePath = next?.path ?? null;
-      if (next && !this.states.has(next.path)) {
-        await this.readInto(next);
+    if (tab.dirty) {
+      if (tab.missing) {
+        this.error = "文件已从磁盘删除，请先另存为或强制关闭。";
+        return false;
+      }
+      if (!(await this.save(path, true))) {
+        return false;
       }
     }
+    this.remove(path);
+    return true;
   }
 
-  async save(path: string, force = false): Promise<void> {
+  forceClose(path: string): void {
+    this.remove(path);
+  }
+
+  async save(path: string, force = false): Promise<boolean> {
     const tab = this.find(path);
     const state = this.states.get(path);
-    if (!tab || !state || tab.missing) {
-      return;
+    if (!tab || !state) {
+      return false;
+    }
+    if (tab.missing) {
+      this.error = "文件已从磁盘删除，请先另存为。";
+      return false;
     }
     if (!tab.dirty && !force) {
-      return;
+      return true;
     }
 
     this.cancelTimer(path);
@@ -117,23 +131,106 @@ export class TabsStore {
         tab.dirty = false;
       }
       tab.conflict = false;
+      tab.error = null;
       this.status = "已保存";
+      return true;
     } catch (error) {
       const message = String(error);
       if (message.startsWith("conflict:")) {
         tab.conflict = true;
+        this.error = "文件已在磁盘上被修改，请选择保留我的或载入磁盘版本。";
       } else {
+        tab.error = message;
         this.error = message;
       }
+      return false;
     } finally {
       tab.saving = false;
     }
   }
 
-  async saveActive(): Promise<void> {
-    if (this.activePath) {
-      await this.save(this.activePath, true);
+  async saveActive(): Promise<boolean> {
+    if (!this.activePath) {
+      return true;
     }
+    return this.save(this.activePath, true);
+  }
+
+  async saveAs(path: string, newPath: string): Promise<boolean> {
+    const tab = this.find(path);
+    const state = this.states.get(path);
+    if (!tab || !state) {
+      return false;
+    }
+
+    try {
+      const text = state.doc.toString();
+      const cursor = state.selection.main.head;
+      const mtime = await ipc.saveFileAs(newPath, text, tab.eol);
+      this.states.delete(path);
+      this.states.set(newPath, this.makeState(newPath, text, cursor));
+      tab.path = newPath;
+      tab.title = basename(newPath);
+      tab.mtimeMs = mtime;
+      tab.dirty = false;
+      tab.missing = false;
+      tab.conflict = false;
+      tab.error = null;
+      if (this.activePath === path) {
+        this.activePath = newPath;
+      }
+      this.loadedVersion += 1;
+      return true;
+    } catch (error) {
+      tab.error = String(error);
+      this.error = String(error);
+      return false;
+    }
+  }
+
+  async prepareDelete(path: string): Promise<boolean> {
+    for (const tab of this.tabs.filter((entry) => isUnder(entry.path, path))) {
+      if (!tab.dirty) {
+        continue;
+      }
+      if (tab.missing) {
+        this.error = "有打开的文件已从磁盘删除且尚未保存，请先另存为。";
+        return false;
+      }
+      if (!(await this.save(tab.path, true))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  closeUnder(path: string): void {
+    for (const tab of [...this.tabs]) {
+      if (isUnder(tab.path, path)) {
+        this.remove(tab.path);
+      }
+    }
+  }
+
+  retarget(oldPath: string, newPath: string): void {
+    const affected = this.tabs.filter((tab) => isUnder(tab.path, oldPath));
+    for (const tab of affected) {
+      const next = newPath + tab.path.slice(oldPath.length);
+      const state = this.states.get(tab.path);
+      const cursor = state?.selection.main.head ?? 0;
+      const text = state?.doc.toString() ?? "";
+      this.states.delete(tab.path);
+      if (state) {
+        this.states.set(next, this.makeState(next, text, cursor));
+      }
+      tab.path = next;
+      tab.title = basename(next);
+      tab.error = null;
+    }
+    if (this.activePath && isUnder(this.activePath, oldPath)) {
+      this.activePath = newPath + this.activePath.slice(oldPath.length);
+    }
+    this.loadedVersion += 1;
   }
 
   noteEdit(path: string, state: EditorState): void {
@@ -170,13 +267,25 @@ export class TabsStore {
   snapshot(): TabState[] {
     return this.tabs.map((tab) => ({
       path: tab.path,
-      cursor: this.states.get(tab.path)?.selection.main.head ?? 0,
+      cursor:
+        this.states.get(tab.path)?.selection.main.head ??
+        this.pendingCursor.get(tab.path) ??
+        0,
       scrollTop: tab.scrollTop,
     }));
   }
 
-  restore(tabs: TabState[], active: string | null): void {
-    this.tabs = tabs.map((entry) => this.createTab(entry.path, entry.cursor, entry.scrollTop));
+  restore(entries: TabState[], active: string | null): void {
+    const seen = new Set<string>();
+    const restored: Tab[] = [];
+    for (const entry of entries) {
+      if (seen.has(entry.path)) {
+        continue;
+      }
+      seen.add(entry.path);
+      restored.push(this.createTab(entry.path, entry.cursor, entry.scrollTop));
+    }
+    this.tabs = restored;
     this.activePath = active;
     if (active) {
       const tab = this.find(active);
@@ -196,6 +305,7 @@ export class TabsStore {
         const content = await ipc.readFile(tab.path);
         if (tab.missing) {
           tab.missing = false;
+          tab.error = null;
           if (!tab.dirty) {
             this.applyContent(tab, content);
           }
@@ -208,9 +318,15 @@ export class TabsStore {
             this.applyContent(tab, content);
           }
         }
-      } catch {
-        tab.missing = true;
-        this.cancelTimer(tab.path);
+      } catch (error) {
+        const message = String(error);
+        if (message.startsWith("not-found:")) {
+          tab.missing = true;
+          this.cancelTimer(tab.path);
+        } else {
+          tab.error = message;
+          this.error = message;
+        }
       }
     }
   }
@@ -232,6 +348,7 @@ export class TabsStore {
         await this.save(path, true);
       }
     } catch (error) {
+      tab.error = String(error);
       this.error = String(error);
     }
   }
@@ -248,6 +365,7 @@ export class TabsStore {
       saving: false,
       conflict: false,
       scrollTop,
+      error: null,
     };
   }
 
@@ -262,10 +380,16 @@ export class TabsStore {
       tab.dirty = false;
       tab.missing = false;
       tab.conflict = false;
+      tab.error = null;
       this.loadedVersion += 1;
     } catch (error) {
-      tab.missing = true;
-      this.error = String(error);
+      const message = String(error);
+      if (message.startsWith("not-found:")) {
+        tab.missing = true;
+      } else {
+        tab.error = message;
+      }
+      this.error = message;
     }
   }
 
@@ -280,6 +404,7 @@ export class TabsStore {
     tab.dirty = false;
     tab.missing = false;
     tab.conflict = false;
+    tab.error = null;
     this.loadedVersion += 1;
   }
 
@@ -291,6 +416,7 @@ export class TabsStore {
         ...baseExtensions(),
         documentPath.of(path),
         EditorView.updateListener.of((update) => {
+          this.states.set(path, update.state);
           if (update.docChanged) {
             this.noteEdit(path, update.state);
           }
@@ -300,6 +426,23 @@ export class TabsStore {
         }),
       ],
     });
+  }
+
+  private remove(path: string): void {
+    const index = this.tabs.findIndex((tab) => tab.path === path);
+    const remaining = this.tabs.filter((tab) => tab.path !== path);
+    this.tabs = remaining;
+    this.states.delete(path);
+    this.pendingCursor.delete(path);
+    this.cancelTimer(path);
+
+    if (this.activePath === path) {
+      const next = remaining[Math.min(index, remaining.length - 1)];
+      this.activePath = next?.path ?? null;
+      if (next && !this.states.has(next.path)) {
+        void this.readInto(next);
+      }
+    }
   }
 
   private scheduleSave(path: string): void {

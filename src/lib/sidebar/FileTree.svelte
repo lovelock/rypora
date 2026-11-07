@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ContextAction, FileNode } from "../types";
   import { workspace, parentDirectory } from "../state/workspace.svelte";
+  import { tabs } from "../state/tabs.svelte";
   import TreeNode from "./TreeNode.svelte";
   import ContextMenu from "./ContextMenu.svelte";
   import PromptDialog from "../ui/PromptDialog.svelte";
@@ -15,10 +16,24 @@
   let deleteTarget = $state<FileNode | null>(null);
   let dragSource = $state<string | null>(null);
 
+  function findNode(node: FileNode, path: string): FileNode | null {
+    if (node.path === path) {
+      return node;
+    }
+    for (const child of node.children) {
+      const found = findNode(child, path);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+
   function openMenu(event: MouseEvent, node: FileNode): void {
     event.preventDefault();
+    event.stopPropagation();
     workspace.select(node.path);
-    if (node.isDir) {
+    if (node.isDir && node.path !== workspace.root) {
       workspace.expand(node.path);
     }
     menu = {
@@ -26,6 +41,18 @@
       y: Math.min(event.clientY, window.innerHeight - 210),
       node,
     };
+  }
+
+  function openRootMenu(event: MouseEvent): void {
+    if (!workspace.root) {
+      return;
+    }
+    openMenu(event, {
+      name: workspace.root,
+      path: workspace.root,
+      isDir: true,
+      children: [],
+    });
   }
 
   function handleAction(action: ContextAction): void {
@@ -64,39 +91,84 @@
       renamingPath = null;
       return;
     }
+
+    const node = findNode(tree, path);
+    const isDir = node?.isDir ?? false;
+
+    if (!(await tabs.prepareDelete(path))) {
+      renamingPath = null;
+      return;
+    }
+
     const renamed = await workspace.renameEntry(path, name);
     renamingPath = null;
     if (renamed) {
+      tabs.retarget(path, renamed);
       workspace.select(renamed);
-      onOpen(renamed);
+      if (!isDir) {
+        onOpen(renamed);
+      }
     }
   }
 
   async function confirmDelete(): Promise<void> {
     const target = deleteTarget;
     deleteTarget = null;
-    if (target) {
-      await workspace.deleteEntry(target.path);
+    if (!target) {
+      return;
+    }
+    if (!(await tabs.prepareDelete(target.path))) {
+      return;
+    }
+    const deleted = await workspace.deleteEntry(target.path);
+    if (deleted) {
+      tabs.closeUnder(target.path);
     }
   }
 
-  function handleDrop(destDir: string): void {
+  async function handleDrop(destDir: string): Promise<void> {
     const source = dragSource;
     dragSource = null;
-    if (source && source !== destDir) {
-      void workspace.moveEntry(source, destDir);
+    if (!source || source === destDir) {
+      return;
+    }
+    const moved = await workspace.moveEntry(source, destDir);
+    if (moved) {
+      tabs.retarget(source, moved);
+    }
+  }
+
+  function handleTreeKey(event: KeyboardEvent): void {
+    if (event.key === "F2" && workspace.selectedPath) {
+      event.preventDefault();
+      renamingPath = workspace.selectedPath;
     }
   }
 </script>
+
+{#if workspace.root}
+  <div class="tree-toolbar">
+    <button class="ghost" onclick={() => (prompt = { parent: workspace.root!, isDir: false })}>
+      ＋ 文件
+    </button>
+    <button class="ghost" onclick={() => (prompt = { parent: workspace.root!, isDir: true })}>
+      ＋ 文件夹
+    </button>
+  </div>
+{/if}
 
 <div
   class="tree"
   role="tree"
   tabindex="0"
+  onkeydown={handleTreeKey}
+  oncontextmenu={openRootMenu}
   ondragover={(event) => event.preventDefault()}
   ondrop={(event) => {
     event.preventDefault();
-    if (workspace.root) handleDrop(workspace.root);
+    if (workspace.root) {
+      void handleDrop(workspace.root);
+    }
   }}
 >
   {#each tree.children as child (child.path)}
@@ -109,7 +181,7 @@
       onRename={commitRename}
       onRenameCancel={() => (renamingPath = null)}
       onDragStart={(path) => (dragSource = path)}
-      onDrop={handleDrop}
+      onDrop={(path) => void handleDrop(path)}
     />
   {/each}
 </div>
@@ -144,3 +216,16 @@
     onCancel={() => (deleteTarget = null)}
   />
 {/if}
+
+<style>
+  .tree-toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tree-toolbar .ghost {
+    flex: 1;
+  }
+</style>

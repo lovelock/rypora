@@ -32,6 +32,19 @@ export class ImageWidget extends WidgetType {
   }
 }
 
+export class BulletWidget extends WidgetType {
+  eq(): boolean {
+    return true;
+  }
+
+  toDOM(): HTMLElement {
+    const bullet = document.createElement("span");
+    bullet.className = "cm-preview-bullet";
+    bullet.textContent = "•";
+    return bullet;
+  }
+}
+
 export class RuleWidget extends WidgetType {
   constructor(readonly from: number) {
     super();

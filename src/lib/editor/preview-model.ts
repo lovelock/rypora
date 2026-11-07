@@ -57,7 +57,7 @@ export function computeInlineRanges(
           hide(ref.from, contentStart);
         }
         style(contentStart, ref.to, `cm-preview-h${heading[1]}`);
-        return false;
+        return true;
       }
 
       const cls = STYLE_BY_NODE[ref.name];
@@ -78,7 +78,7 @@ export function computeInlineRanges(
           }
           style(marks[0].to, marks[marks.length - 1].from, cls);
         }
-        return false;
+        return true;
       }
 
       return undefined;

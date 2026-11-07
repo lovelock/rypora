@@ -49,6 +49,10 @@ export function writeFile(
   return invoke("write_file", { path, text, eol, expectedMtimeMs });
 }
 
+export function saveFileAs(path: string, text: string, eol: Eol): Promise<number> {
+  return invoke("save_file_as", { path, text, eol });
+}
+
 export function searchFiles(query: string, limit = 50): Promise<SearchHit[]> {
   return invoke("search_files", { query, limit });
 }

@@ -13,12 +13,20 @@
       state: createEditorState(""),
       parent: host!,
     });
+    view.scrollDOM.addEventListener("scroll", handleScroll, { passive: true });
   });
+
+  function handleScroll(): void {
+    if (view && currentPath) {
+      tabs.setScroll(currentPath, view.scrollDOM.scrollTop);
+    }
+  }
 
   onDestroy(() => {
     if (view && currentPath) {
       tabs.capture(currentPath, view.state, view.scrollDOM.scrollTop);
     }
+    view?.scrollDOM.removeEventListener("scroll", handleScroll);
     view?.destroy();
     view = null;
   });
@@ -33,6 +41,9 @@
 
     if (currentPath && currentPath !== path) {
       tabs.capture(currentPath, view.state, view.scrollDOM.scrollTop);
+      if (tabs.find(currentPath)?.dirty) {
+        void tabs.save(currentPath);
+      }
     }
 
     if (!path) {
@@ -45,7 +56,7 @@
       return;
     }
 
-    if (currentPath !== path || view.state !== state) {
+    if (currentPath !== path || (view.state !== state && !view.composing)) {
       currentPath = path;
       view.setState(state);
       tabs.syncCursor(path, state);
