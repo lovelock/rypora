@@ -2,7 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { save as saveDialog } from "@tauri-apps/plugin-dialog";
+  import { save as saveDialog, ask } from "@tauri-apps/plugin-dialog";
   import { workspace } from "./lib/state/workspace.svelte";
   import { tabs } from "./lib/state/tabs.svelte";
   import { loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
@@ -21,6 +21,7 @@
   let sidebarWidth = $state(260);
   let fontSize = $state(16);
   let discardPath = $state<string | null>(null);
+  let closing = false;
   let unlisten: UnlistenFn | undefined;
   let unlistenClose: UnlistenFn | undefined;
   let unlistenWatch: UnlistenFn | undefined;
@@ -186,26 +187,58 @@
       workspace.error = `文件监听失败：${event.payload.message}`;
     });
 
-    unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
-      let failed = false;
-      for (const tab of [...tabs.tabs]) {
-        if (tab.dirty) {
-          if (tab.missing) {
-            failed = true;
-            continue;
-          }
-          const ok = await tabs.save(tab.path, true);
-          if (!ok) {
-            failed = true;
-          }
-        }
+    unlistenClose = await getCurrentWindow().onCloseRequested((event) => {
+      event.preventDefault();
+      if (closing) {
+        return;
       }
-      await saveConfig(buildConfig());
-      if (failed) {
-        event.preventDefault();
-      }
+      closing = true;
+      void finishClose();
     });
   });
+
+  async function finishClose(): Promise<void> {
+    let failed = false;
+
+    for (const tab of [...tabs.tabs]) {
+      if (!tab.dirty) {
+        continue;
+      }
+      if (tab.missing) {
+        failed = true;
+        continue;
+      }
+      const saved = await Promise.race([
+        tabs.save(tab.path, true),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000)),
+      ]);
+      if (!saved) {
+        failed = true;
+      }
+    }
+
+    try {
+      await Promise.race([
+        saveConfig(buildConfig()),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    } catch {
+      // Config loss is not worth blocking the close.
+    }
+
+    if (failed) {
+      const discard = await ask("有未保存的内容，仍要关闭吗？", {
+        title: "Rypora",
+        kind: "warning",
+      });
+      if (!discard) {
+        closing = false;
+        return;
+      }
+    }
+
+    await getCurrentWindow().destroy();
+  }
 
   onDestroy(() => {
     window.removeEventListener("rypora:open-link", handleOpenLink);
