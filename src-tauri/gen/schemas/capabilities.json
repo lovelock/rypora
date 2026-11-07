@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Default capabilities for the Rypora desktop window","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-destroy","dialog:default","opener:default"]}}
+{"default":{"identifier":"default","description":"Default capabilities for the Rypora desktop window","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-destroy","clipboard-manager:allow-write-text","dialog:default","opener:default"]}}
