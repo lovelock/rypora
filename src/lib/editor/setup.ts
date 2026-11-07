@@ -1,5 +1,5 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { markdown } from "@codemirror/lang-markdown";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { EditorState, type Extension } from "@codemirror/state";
@@ -13,7 +13,7 @@ export function baseExtensions(): Extension[] {
     history(),
     drawSelection(),
     EditorView.lineWrapping,
-    markdown({ codeLanguages: languages }),
+    markdown({ base: markdownLanguage, codeLanguages: languages }),
     syntaxHighlighting(markdownHighlight),
     editorTheme,
     livePreview(),

@@ -5,7 +5,7 @@
   import { createEditorState } from "./setup";
 
   let host: HTMLDivElement | undefined = $state(undefined);
-  let view: EditorView | null = null;
+  let view: EditorView | null = $state(null);
   let currentPath: string | null = null;
 
   onMount(() => {

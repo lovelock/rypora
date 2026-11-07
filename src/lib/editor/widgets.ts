@@ -33,13 +33,22 @@ export class ImageWidget extends WidgetType {
 }
 
 export class RuleWidget extends WidgetType {
+  constructor(readonly from: number) {
+    super();
+  }
+
   eq(): boolean {
     return true;
   }
 
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const rule = document.createElement("hr");
     rule.className = "cm-preview-rule";
+    rule.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      view.dispatch({ selection: { anchor: this.from }, scrollIntoView: true });
+      view.focus();
+    });
     return rule;
   }
 }

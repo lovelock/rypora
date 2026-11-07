@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import { Facet, type Extension, type Range } from "@codemirror/state";
+import { Facet, StateField, type EditorState, type Extension, type Range } from "@codemirror/state";
 import {
   Decoration,
   type DecorationSet,
@@ -21,10 +21,8 @@ interface BuiltDecorations {
   atomic: DecorationSet;
 }
 
-function build(view: EditorView): BuiltDecorations {
-  const state = view.state;
+function activeLinesOf(state: EditorState): Set<number> {
   const activeLines = new Set<number>();
-
   for (const range of state.selection.ranges) {
     const start = state.doc.lineAt(range.from).number;
     const end = state.doc.lineAt(range.to).number;
@@ -32,6 +30,81 @@ function build(view: EditorView): BuiltDecorations {
       activeLines.add(line);
     }
   }
+  return activeLines;
+}
+
+function buildBlocks(state: EditorState): DecorationSet {
+  const activeLines = activeLinesOf(state);
+  const tree = syntaxTree(state);
+  const decorations: Range<Decoration>[] = [];
+  const seen = new Set<number>();
+
+  tree.iterate({
+    from: 0,
+    to: state.doc.length,
+    enter(ref) {
+      if (ref.name === "FencedCode") {
+        if (seen.has(ref.from)) {
+          return false;
+        }
+        const start = state.doc.lineAt(ref.from);
+        const end = state.doc.lineAt(Math.min(ref.to, state.doc.length));
+        for (let line = start.number; line <= end.number; line += 1) {
+          if (activeLines.has(line)) {
+            return false;
+          }
+        }
+        seen.add(ref.from);
+        const codeNode = ref.node.getChild("CodeText");
+        const infoNode = ref.node.getChild("CodeInfo");
+        const code = codeNode
+          ? state.doc.sliceString(codeNode.from, codeNode.to)
+          : "";
+        const lang = infoNode
+          ? state.doc.sliceString(infoNode.from, infoNode.to)
+          : "";
+        decorations.push(
+          Decoration.replace({
+            block: true,
+            widget: new CodeBlockWidget(code, lang, ref.from),
+          }).range(start.from, end.to),
+        );
+        return false;
+      }
+
+      if (ref.name === "HorizontalRule") {
+        const line = state.doc.lineAt(ref.from);
+        if (!activeLines.has(line.number)) {
+          decorations.push(
+            Decoration.replace({
+              block: true,
+              widget: new RuleWidget(ref.from),
+            }).range(line.from, line.to),
+          );
+        }
+        return false;
+      }
+
+      return undefined;
+    },
+  });
+
+  return Decoration.set(decorations, true);
+}
+
+const blockField = StateField.define<DecorationSet>({
+  create(state) {
+    return buildBlocks(state);
+  },
+  update(_value, transaction) {
+    return buildBlocks(transaction.state);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
+function build(view: EditorView): BuiltDecorations {
+  const state = view.state;
+  const activeLines = activeLinesOf(state);
 
   const tree = syntaxTree(state);
   const path = state.facet(documentPath);
@@ -49,14 +122,13 @@ function build(view: EditorView): BuiltDecorations {
   const replace = (
     from: number,
     to: number,
-    widget: ImageWidget | RuleWidget | TaskWidget | CodeBlockWidget,
-    block = false,
+    widget: ImageWidget | TaskWidget,
   ): void => {
     if (to <= from) {
       return;
     }
-    decorations.push(Decoration.replace({ widget, block }).range(from, to));
-    atomic.push(Decoration.replace({ widget, block }).range(from, to));
+    decorations.push(Decoration.replace({ widget }).range(from, to));
+    atomic.push(Decoration.replace({ widget }).range(from, to));
   };
 
   for (const visible of view.visibleRanges) {
@@ -81,39 +153,6 @@ function build(view: EditorView): BuiltDecorations {
       to: visible.to,
       enter(ref) {
         switch (ref.name) {
-          case "FencedCode": {
-            const start = state.doc.lineAt(ref.from);
-            const end = state.doc.lineAt(Math.min(ref.to, state.doc.length));
-            for (let line = start.number; line <= end.number; line += 1) {
-              if (activeLines.has(line)) {
-                return false;
-              }
-            }
-            const codeNode = ref.node.getChild("CodeText");
-            const infoNode = ref.node.getChild("CodeInfo");
-            const code = codeNode
-              ? state.doc.sliceString(codeNode.from, codeNode.to)
-              : "";
-            const lang = infoNode
-              ? state.doc.sliceString(infoNode.from, infoNode.to)
-              : "";
-            replace(
-              start.from,
-              end.to,
-              new CodeBlockWidget(code, lang, ref.from),
-              true,
-            );
-            return false;
-          }
-
-          case "HorizontalRule": {
-            const line = state.doc.lineAt(ref.from);
-            if (!activeLines.has(line.number)) {
-              replace(line.from, line.to, new RuleWidget(), true);
-            }
-            return false;
-          }
-
           case "Image": {
             const urlNode = ref.node.getChild("URL");
             if (!urlNode || activeLines.has(state.doc.lineAt(ref.from).number)) {
@@ -282,6 +321,7 @@ const linkClick = EditorView.domEventHandlers({
 
 export function livePreview(): Extension {
   return [
+    blockField,
     previewPlugin,
     EditorView.atomicRanges.of(
       (view) => view.plugin(previewPlugin)?.atomic ?? Decoration.none,
