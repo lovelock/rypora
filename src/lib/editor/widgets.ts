@@ -1,0 +1,146 @@
+import { LanguageDescription } from "@codemirror/language";
+import { languages } from "@codemirror/language-data";
+import { EditorView, WidgetType } from "@codemirror/view";
+import { classHighlighter, highlightTree } from "@lezer/highlight";
+import { convertFileSrc } from "@tauri-apps/api/core";
+
+export class ImageWidget extends WidgetType {
+  constructor(
+    readonly src: string,
+    readonly alt: string,
+    readonly from: number,
+  ) {
+    super();
+  }
+
+  eq(other: ImageWidget): boolean {
+    return other.src === this.src && other.alt === this.alt;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const image = document.createElement("img");
+    image.className = "cm-preview-image";
+    image.src = convertFileSrc(this.src);
+    image.alt = this.alt;
+    image.loading = "lazy";
+    image.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      view.dispatch({ selection: { anchor: this.from }, scrollIntoView: true });
+      view.focus();
+    });
+    return image;
+  }
+}
+
+export class RuleWidget extends WidgetType {
+  eq(): boolean {
+    return true;
+  }
+
+  toDOM(): HTMLElement {
+    const rule = document.createElement("hr");
+    rule.className = "cm-preview-rule";
+    return rule;
+  }
+}
+
+export class TaskWidget extends WidgetType {
+  constructor(
+    readonly checked: boolean,
+    readonly from: number,
+    readonly to: number,
+  ) {
+    super();
+  }
+
+  eq(other: TaskWidget): boolean {
+    return other.checked === this.checked && other.from === this.from;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "cm-preview-task";
+    checkbox.checked = this.checked;
+    checkbox.addEventListener("change", () => {
+      view.dispatch({
+        changes: {
+          from: this.from,
+          to: this.to,
+          insert: checkbox.checked ? "[x]" : "[ ]",
+        },
+      });
+    });
+    return checkbox;
+  }
+}
+
+export class CodeBlockWidget extends WidgetType {
+  constructor(
+    readonly code: string,
+    readonly lang: string,
+    readonly from: number,
+  ) {
+    super();
+  }
+
+  eq(other: CodeBlockWidget): boolean {
+    return other.code === this.code && other.lang === this.lang;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-preview-codeblock";
+
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    code.textContent = this.code;
+    pre.appendChild(code);
+    wrapper.appendChild(pre);
+
+    wrapper.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      view.dispatch({ selection: { anchor: this.from }, scrollIntoView: true });
+      view.focus();
+    });
+
+    void this.highlight(code);
+    return wrapper;
+  }
+
+  private async highlight(block: HTMLElement): Promise<void> {
+    const description = LanguageDescription.matchLanguageName(languages, this.lang, true);
+    if (!description) {
+      return;
+    }
+
+    try {
+      const support = await description.load();
+      const tree = support.language.parser.parse(this.code);
+      if (!block.isConnected) {
+        return;
+      }
+
+      block.textContent = "";
+      let position = 0;
+      highlightTree(tree, classHighlighter, (from, to, classes) => {
+        if (from > position) {
+          block.appendChild(document.createTextNode(this.code.slice(position, from)));
+        }
+        const span = document.createElement("span");
+        if (classes) {
+          span.className = classes;
+        }
+        span.textContent = this.code.slice(from, to);
+        block.appendChild(span);
+        position = to;
+      });
+
+      if (position < this.code.length) {
+        block.appendChild(document.createTextNode(this.code.slice(position)));
+      }
+    } catch {
+      block.textContent = this.code;
+    }
+  }
+}

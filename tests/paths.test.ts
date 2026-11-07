@@ -1,0 +1,26 @@
+import { describe, expect, test } from "vitest";
+import { resolveRelative } from "../src/lib/utils/paths";
+
+describe("resolveRelative", () => {
+  test("resolves parent directories", () => {
+    expect(resolveRelative("/w/notes/a.md", "../img/x.png")).toBe("/w/img/x.png");
+  });
+
+  test("resolves current directory", () => {
+    expect(resolveRelative("/w/notes/a.md", "./x.png")).toBe("/w/notes/x.png");
+  });
+
+  test("keeps absolute paths", () => {
+    expect(resolveRelative("/w/notes/a.md", "/abs/x.png")).toBe("/abs/x.png");
+  });
+
+  test("strips anchors from relative links", () => {
+    expect(resolveRelative("/w/notes/a.md", "../b.md#section")).toBe("/w/b.md");
+  });
+
+  test("keeps urls untouched", () => {
+    expect(resolveRelative("/w/notes/a.md", "https://example.com/a.md")).toBe(
+      "https://example.com/a.md",
+    );
+  });
+});

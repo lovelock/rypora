@@ -1,6 +1,7 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { baseExtensions } from "../editor/setup";
+import { documentPath } from "../editor/live-preview";
 import * as ipc from "../ipc";
 import type { Eol, FileContent, TabState } from "../types";
 import { basename } from "../utils/paths";
@@ -273,6 +274,7 @@ export class TabsStore {
       selection: { anchor: Math.min(cursor, doc.length) },
       extensions: [
         ...baseExtensions(),
+        documentPath.of(path),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             this.noteEdit(path, update.state);

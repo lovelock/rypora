@@ -4,8 +4,9 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { workspace } from "./lib/state/workspace.svelte";
   import { tabs } from "./lib/state/tabs.svelte";
-  import { loadConfig, refreshIndex, saveConfig } from "./lib/ipc";
+  import { loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
   import type { AppConfig } from "./lib/types";
+  import { resolveRelative } from "./lib/utils/paths";
   import FileTree from "./lib/sidebar/FileTree.svelte";
   import QuickOpen from "./lib/palette/QuickOpen.svelte";
   import TabBar from "./lib/tabs/TabBar.svelte";
@@ -38,6 +39,26 @@
 
   function openFile(path: string): void {
     void tabs.open(path);
+  }
+
+  function handleOpenLink(event: Event): void {
+    const detail = (event as CustomEvent<{ href: string; path: string }>).detail;
+    if (!detail?.href) {
+      return;
+    }
+    if (/^(https?:|mailto:)/i.test(detail.href)) {
+      void openUrl(detail.href);
+      return;
+    }
+    if (detail.href.startsWith("#")) {
+      return;
+    }
+    const target = resolveRelative(detail.path, detail.href);
+    if (/\.(md|markdown|mdown)$/i.test(target)) {
+      openFile(target);
+    } else {
+      void revealItem(target);
+    }
   }
 
   function handleKeydown(event: KeyboardEvent): void {
@@ -77,6 +98,8 @@
   }
 
   onMount(async () => {
+    window.addEventListener("rypora:open-link", handleOpenLink);
+
     const config = await loadConfig();
     theme = config.theme;
     sidebarWidth = config.sidebarWidth;
@@ -108,6 +131,7 @@
   });
 
   onDestroy(() => {
+    window.removeEventListener("rypora:open-link", handleOpenLink);
     unlisten?.();
     unlistenClose?.();
   });

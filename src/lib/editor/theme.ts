@@ -39,6 +39,99 @@ export const editorTheme = EditorView.theme({
   ".cm-widgetBuffer": {
     display: "none",
   },
+  ".cm-preview-strong": {
+    fontWeight: "700",
+  },
+  ".cm-preview-em": {
+    fontStyle: "italic",
+  },
+  ".cm-preview-strike": {
+    textDecoration: "line-through",
+    color: "var(--muted)",
+  },
+  ".cm-preview-code": {
+    padding: "0.08em 0.3em",
+    borderRadius: "3px",
+    background: "var(--code-bg)",
+    fontFamily: "var(--mono-font, monospace)",
+    fontSize: "0.92em",
+  },
+  ".cm-preview-h1": {
+    fontSize: "1.9em",
+    fontWeight: "700",
+    lineHeight: "1.3",
+  },
+  ".cm-preview-h2": {
+    fontSize: "1.55em",
+    fontWeight: "700",
+    lineHeight: "1.35",
+  },
+  ".cm-preview-h3": {
+    fontSize: "1.3em",
+    fontWeight: "700",
+  },
+  ".cm-preview-h4": {
+    fontSize: "1.15em",
+    fontWeight: "700",
+  },
+  ".cm-preview-h5": {
+    fontSize: "1.05em",
+    fontWeight: "700",
+  },
+  ".cm-preview-h6": {
+    fontSize: "1em",
+    fontWeight: "700",
+    color: "var(--muted)",
+  },
+  ".cm-preview-image": {
+    display: "block",
+    maxWidth: "100%",
+    margin: "10px 0",
+    borderRadius: "6px",
+  },
+  ".cm-preview-codeblock": {
+    margin: "10px 0",
+    padding: "10px 14px",
+    overflowX: "auto",
+    borderRadius: "8px",
+    background: "var(--code-bg)",
+    fontFamily: "var(--mono-font, monospace)",
+    fontSize: "0.9em",
+    lineHeight: "1.55",
+  },
+  ".cm-preview-codeblock pre": {
+    margin: "0",
+    whiteSpace: "pre-wrap",
+  },
+  ".cm-preview-codeblock code": {
+    fontFamily: "inherit",
+  },
+  ".cm-preview-rule": {
+    margin: "18px 0",
+    border: "none",
+    borderTop: "1px solid var(--border)",
+  },
+  ".cm-preview-task": {
+    width: "15px",
+    height: "15px",
+    marginRight: "6px",
+    verticalAlign: "middle",
+    accentColor: "var(--accent)",
+  },
+  ".cm-preview-link": {
+    color: "var(--accent)",
+    textDecoration: "underline",
+    cursor: "pointer",
+  },
+  ".cm-preview-quote": {
+    borderLeft: "3px solid var(--border)",
+    paddingLeft: "16px",
+    color: "var(--muted)",
+  },
+  ".cm-preview-listmark": {
+    color: "var(--accent)",
+    fontWeight: "700",
+  },
 });
 
 export const markdownHighlight = HighlightStyle.define([

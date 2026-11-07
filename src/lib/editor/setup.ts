@@ -5,6 +5,7 @@ import { languages } from "@codemirror/language-data";
 import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, drawSelection, keymap } from "@codemirror/view";
 import { editorTheme, markdownHighlight } from "./theme";
+import { livePreview } from "./live-preview";
 
 export function baseExtensions(): Extension[] {
   return [
@@ -14,6 +15,7 @@ export function baseExtensions(): Extension[] {
     markdown({ codeLanguages: languages }),
     syntaxHighlighting(markdownHighlight),
     editorTheme,
+    livePreview(),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
   ];
 }
