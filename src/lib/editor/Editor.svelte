@@ -3,6 +3,7 @@
   import { EditorView } from "@codemirror/view";
   import { tabs } from "../state/tabs.svelte";
   import { createEditorState } from "./setup";
+  import { findTerm } from "../utils/find-term";
 
   let host: HTMLDivElement | undefined = $state(undefined);
   let view: EditorView | null = $state(null);
@@ -70,6 +71,21 @@
         }
         view.focus();
       });
+    }
+
+    const jump = tabs.takeJump(path);
+    if (jump && view.state === state) {
+      const offset = findTerm(view.state.doc.toString(), jump.term);
+      let position = offset;
+      if (position === null) {
+        const line = Math.min(Math.max(jump.line, 1), view.state.doc.lines);
+        position = view.state.doc.line(line).from;
+      }
+      view.dispatch({
+        selection: { anchor: position },
+        effects: EditorView.scrollIntoView(position, { y: "center" }),
+      });
+      view.focus();
     }
   });
 </script>

@@ -41,3 +41,21 @@ export interface AppConfig {
 }
 
 export type ContextAction = "new-file" | "new-folder" | "rename" | "delete" | "reveal";
+
+export interface TextHit {
+  path: string;
+  relPath: string;
+  title: string;
+  score: number;
+  snippetHtml: string;
+  term: string;
+  line: number;
+}
+
+export interface IndexStatus {
+  phase: string;
+  indexed: number;
+  total: number;
+  generation: number;
+  available: boolean;
+}

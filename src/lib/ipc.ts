@@ -4,7 +4,9 @@ import type {
   Eol,
   FileContent,
   FileNode,
+  IndexStatus,
   SearchHit,
+  TextHit,
   WorkspaceSnapshot,
 } from "./types";
 
@@ -71,4 +73,20 @@ export function revealItem(path: string): Promise<void> {
 
 export function openUrl(url: string): Promise<void> {
   return invoke("open_url", { url });
+}
+
+export function searchText(
+  query: string,
+  limit: number,
+  excludePaths: string[],
+): Promise<TextHit[]> {
+  return invoke("search_text", { query, limit, excludePaths });
+}
+
+export function indexStatus(): Promise<IndexStatus> {
+  return invoke("index_status");
+}
+
+export function reindexWorkspace(): Promise<void> {
+  return invoke("reindex_workspace");
 }

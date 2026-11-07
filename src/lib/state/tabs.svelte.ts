@@ -37,6 +37,7 @@ export class TabsStore {
   private states = new Map<string, EditorState>();
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
   private pendingCursor = new Map<string, number>();
+  private jumps = new Map<string, { line: number; term: string }>();
 
   get active(): Tab | null {
     return this.tabs.find((tab) => tab.path === this.activePath) ?? null;
@@ -71,6 +72,24 @@ export class TabsStore {
     this.tabs = [...this.tabs, tab];
     this.activePath = path;
     await this.readInto(tab);
+  }
+
+  async openAt(path: string, line: number, term: string): Promise<void> {
+    this.jumps.set(path, { line, term });
+    if (this.find(path) && this.states.has(path)) {
+      this.activePath = path;
+      this.loadedVersion += 1;
+    } else {
+      await this.open(path);
+    }
+  }
+
+  takeJump(path: string): { line: number; term: string } | null {
+    const jump = this.jumps.get(path) ?? null;
+    if (jump) {
+      this.jumps.delete(path);
+    }
+    return jump;
   }
 
   async activate(path: string): Promise<void> {
@@ -434,6 +453,7 @@ export class TabsStore {
     this.tabs = remaining;
     this.states.delete(path);
     this.pendingCursor.delete(path);
+    this.jumps.delete(path);
     this.cancelTimer(path);
 
     if (this.activePath === path) {
