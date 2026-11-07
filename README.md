@@ -1,32 +1,82 @@
 # Rypora
 
-一个轻量的本地 Markdown 工作区：文件树 + `Ctrl+P` 文件名/正文统一搜索 + 单栏实时渲染 + 自动保存。
+**A lightweight, local-first Markdown workspace.**
 
-它想补的是 Typora 和 Obsidian 之间的空档：Typora 的文件管理太弱，Obsidian 又太重。Rypora 把磁盘上的文件夹当作仓库，不做图谱、插件、双链和同步。
+Rypora 是一个本地优先的 Markdown 工作区：打开一个文件夹就能写作，文件名和正文都能快速搜索，编辑区按 Typora 的方式实时渲染。
+
+它只做三件事——管理文件夹、快速找到内容、安静地写作。不做图谱、插件、双链和同步。
+
+![Rypora screenshot](docs/assets/screenshot.png)
 
 ## 功能
 
-- 打开文件夹作为工作区，左侧文件树支持新建、重命名、删除、拖拽移动。
-- `Ctrl+P` 统一搜索：文件名结果在前，正文全文结果在后；命中字符和正文片段都会高亮。
-- 全文索引后台异步建立，保存/CRUD 不等待索引；面板底部可以手动“重建全文索引”。
-- 单栏实时渲染：标题、粗体、斜体、删除线、行内代码、代码块、图片、链接、引用、列表、任务列表、分割线。
-- 光标所在行显示 Markdown 源码，移开即渲染（Typora / Obsidian live preview 风格）。
-- 400ms 去抖自动保存，原子写盘，保留 LF / CRLF。
-- 标签页、会话恢复（工作区、标签、光标位置）、外部文件变更提示。
-- 亮 / 暗 / 跟随系统三档主题。
+- **文件夹即工作区**：文件树、新建、重命名、删除、拖拽移动。
+- **统一搜索**：`Ctrl+P` 同时搜文件名和正文，文件名结果优先，正文片段高亮，回车跳到命中行。
+- **实时渲染**：标题、粗体/斜体、删除线、行内代码、代码块高亮、图片、链接、引用、列表、任务列表、分割线。
+- **源码与排版共存**：光标所在行显示 Markdown 源码，移开即渲染。
+- **自动保存**：400ms 去抖、原子写入、保留 LF / CRLF。
+- **标签页与会话恢复**：重启后恢复工作区、标签和光标位置。
+- **外部变更提示**：磁盘上的修改/删除不会静默覆盖你的内容。
+- **后台全文索引**：Tantivy + jieba，批量提交，不阻塞保存；索引异常时可一键重建。
+- **主题**：亮色 / 暗色 / 跟随系统。
 
-## 环境要求
+## 下载
 
-- Linux（优先验证）、macOS / Windows 可构建。
-- Rust 1.77+、Node 20+。
-- Linux 需要 `webkit2gtk-4.1`、`gtk3`、`libsoup3`、`javascriptcoregtk-4.1`。
+从 [Releases](https://github.com/lovelock/rypora/releases) 获取对应平台的安装包：
 
-## 开发
+| 平台 | 产物 |
+|---|---|
+| Linux x86_64 | `.AppImage` / `.deb` / `.rpm` |
+| Windows x86_64 | NSIS `.exe` / `.msi` |
+| macOS | `.dmg`（Apple Silicon / Intel） |
+
+构建产物未做代码签名。macOS 首次打开需要右键 → “打开”；Windows 可能弹出 SmartScreen 提示。
+
+## 使用
+
+1. 启动后点击“打开”，选择一个存放 Markdown 文件的文件夹。
+2. 按 `Ctrl+P`，输入文件名或正文里的词。
+3. `↑` / `↓` 选择结果，`Enter` 打开；正文命中会定位到第一处匹配。
+4. 搜索面板底部的“重建全文索引”可以在索引异常时手动恢复。
+
+### 快捷键
+
+| 快捷键 | 功能 |
+|---|---|
+| `Ctrl+P` | 文件名 + 正文搜索 |
+| `Ctrl+S` | 立即保存 |
+| `Ctrl+W` | 关闭当前标签 |
+| `Ctrl+Tab` | 下一个标签 |
+| `Ctrl+B` / `Ctrl+I` | 粗体 / 斜体 |
+| `Ctrl+Shift+X` | 删除线 |
+| `Ctrl+E` | 行内代码 |
+| `F2` | 重命名（文件树） |
+
+## 从源码运行
+
+需要 Rust 1.77+ 和 Node.js 20+。
+
+Linux 还需要：
 
 ```bash
+sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+  librsvg2-dev patchelf
+```
+
+```bash
+git clone https://github.com/lovelock/rypora.git
+cd rypora
 npm install
 npm run tauri dev
 ```
+
+打包：
+
+```bash
+npm run tauri build
+```
+
+Linux 下会生成 `.deb`、`.rpm` 和 `.AppImage`，位置在 `src-tauri/target/release/bundle/`。
 
 ## 测试
 
@@ -37,53 +87,20 @@ npm run check
 npm run build
 ```
 
-## 打包
+## 架构
 
-```bash
-npm run tauri build -- --bundles deb
-```
+| 层 | 技术 | 职责 |
+|---|---|---|
+| 桌面壳 | Tauri 2 | 窗口、文件对话框、系统打开/托盘入口 |
+| 后端 | Rust | 目录扫描、文件 CRUD、原子写入、文件监听、文件名索引、Tantivy 全文索引、会话配置 |
+| UI | Svelte 5 + TypeScript | 文件树、搜索面板、标签、状态栏 |
+| 编辑器 | CodeMirror 6 | 文档编辑；Lezer Markdown 语法树 + 装饰实现实时渲染 |
+| 全文搜索 | Tantivy + jieba | BM25 排序、中文分词、片段高亮、后台批量索引 |
 
-产物在 `src-tauri/target/release/bundle/`。默认 `targets = "all"`，Linux 会产出 deb / rpm / AppImage。
+主要的 Rust 模块在 `src-tauri/src/`，前端在 `src/lib/`，桌面配置在 `src-tauri/tauri.conf.json`。
 
-## 发布 / CI
+## 贡献
 
-推送 `v*` tag 会触发 GitHub Actions（`.github/workflows/release.yml`），构建：
+欢迎提交 issue 和 PR。提交前请确保上面的测试全部通过，并尽量让改动保持聚焦。
 
-- Linux x86_64：`.deb` / `.rpm` / `.AppImage`
-- Windows x86_64：NSIS `.exe` / `.msi`
-- macOS：`.dmg`（Apple Silicon + Intel）
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-构建产物会上传为 workflow artifacts，并创建一个 **draft** GitHub Release。当前未做代码签名/公证：macOS 首次打开需要右键“打开”，Windows 可能触发 SmartScreen。
-
-## 快捷键
-
-| 快捷键 | 功能 |
-|---|---|
-| `Ctrl+P` | 文件名 + 正文全文搜索 |
-| `Ctrl+S` | 立即保存 |
-| `Ctrl+W` | 关闭当前标签 |
-| `Ctrl+Tab` | 下一个标签 |
-| `Ctrl+B` / `Ctrl+I` | 粗体 / 斜体 |
-| `Ctrl+Shift+X` | 删除线 |
-| `Ctrl+E` | 行内代码 |
-| `F2`（文件树） | 重命名 |
-
-## 结构
-
-- `src-tauri/`：Rust 后端。目录扫描、文件 CRUD、原子写入、文件监听、文件名索引、会话配置。
-- `src/`：Svelte 5 + TypeScript 前端。
-  - `lib/editor/`：CodeMirror 6、实时渲染装饰与块级 widget。
-  - `lib/sidebar/`：文件树与右键菜单。
-  - `lib/search/`：`Ctrl+P` 统一搜索面板。
-  - `lib/state/`：工作区与标签状态。
-- `docs/superpowers/specs/`：设计文档。
-- `docs/superpowers/plans/`：实现计划。
-
-## v1 范围之外
-
-双链 / 图谱 / 标签、插件、同步、协作、移动端、PDF / HTML 导出、表格与公式的可视化编辑。
+项目目前处于 `0.1` 阶段，接口、索引格式和文件行为仍可能调整。
