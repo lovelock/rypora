@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { resolveRelative } from "../src/lib/utils/paths";
+import { parentDirectory, resolveRelative } from "../src/lib/utils/paths";
 
 describe("resolveRelative", () => {
   test("resolves parent directories", () => {
@@ -22,5 +22,15 @@ describe("resolveRelative", () => {
     expect(resolveRelative("/w/notes/a.md", "https://example.com/a.md")).toBe(
       "https://example.com/a.md",
     );
+  });
+});
+
+describe("parentDirectory", () => {
+  test("returns the containing directory", () => {
+    expect(parentDirectory("/w/notes/a.md")).toBe("/w/notes");
+  });
+
+  test("returns root for top-level paths", () => {
+    expect(parentDirectory("/a.md")).toBe("/");
   });
 });

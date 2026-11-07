@@ -3,6 +3,11 @@ export function basename(path: string): string {
   return index >= 0 ? path.slice(index + 1) : path;
 }
 
+export function parentDirectory(path: string): string {
+  const index = path.lastIndexOf("/");
+  return index > 0 ? path.slice(0, index) : "/";
+}
+
 export function resolveRelative(docPath: string, href: string): string {
   const stripped = href.split("#")[0].split("?")[0];
   if (!stripped) {

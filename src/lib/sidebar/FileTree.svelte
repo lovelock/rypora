@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ContextAction, FileNode } from "../types";
-  import { workspace, parentDirectory } from "../state/workspace.svelte";
+  import { workspace } from "../state/workspace.svelte";
+  import { parentDirectory } from "../utils/paths";
   import { tabs } from "../state/tabs.svelte";
   import TreeNode from "./TreeNode.svelte";
   import ContextMenu from "./ContextMenu.svelte";
