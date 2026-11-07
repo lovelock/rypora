@@ -58,11 +58,21 @@ sudo pacman -U rypora-0.1.0-1-x86_64.pkg.tar.zst
 | `Cmd/Ctrl+P` | 文件名 + 正文搜索 |
 | `Cmd/Ctrl+S` | 立即保存 |
 | `Cmd/Ctrl+W` | 关闭当前标签 |
+| `Cmd/Ctrl+Shift+P` | 打印 / 另存为 PDF |
 | `Ctrl+Tab` | 下一个标签 |
 | `Cmd/Ctrl+B` / `Cmd/Ctrl+I` | 粗体 / 斜体 |
 | `Cmd/Ctrl+Shift+X` | 删除线 |
 | `Cmd/Ctrl+E` | 行内代码 |
 | `F2` | 重命名当前选中项 |
+
+### 打印 / 导出 PDF
+
+按 `Cmd/Ctrl+Shift+P`，或点状态栏右侧的「打印」。会打开系统打印对话框：
+
+- 打印到打印机：直接选择打印机。
+- 导出 PDF：在对话框里选「另存为 PDF」（macOS / Linux）或「Microsoft Print to PDF」（Windows）。
+
+打印内容是渲染后的 Markdown（标题、列表、表格、代码高亮、图片），不是编辑器当前视口。
 
 ## 从源码运行
 

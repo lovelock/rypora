@@ -7,7 +7,8 @@
   import { tabs } from "./lib/state/tabs.svelte";
   import { indexStatus, loadConfig, openUrl, refreshIndex, revealItem, saveConfig } from "./lib/ipc";
   import type { AppConfig, IndexStatus, TextHit } from "./lib/types";
-  import { resolveRelative } from "./lib/utils/paths";
+  import { basename, resolveRelative } from "./lib/utils/paths";
+  import { buildPrintDocument, printDocument } from "./lib/print/document";
   import { detectPlatform } from "./lib/utils/platform";
   import { matchShortcut } from "./lib/utils/shortcuts";
   import FileTree from "./lib/sidebar/FileTree.svelte";
@@ -86,6 +87,23 @@
     }
   }
 
+  async function printActive(): Promise<void> {
+    const tab = tabs.active;
+    if (!tab) {
+      return;
+    }
+    const state = tabs.state(tab.path);
+    if (!state) {
+      return;
+    }
+
+    const article = await buildPrintDocument(state.doc.toString(), tab.path);
+    const title = basename(tab.path).replace(/\.(md|markdown|mdown)$/i, "");
+    if (!(await printDocument(article, title))) {
+      tabs.error = "打印失败：当前环境不支持打印。";
+    }
+  }
+
   function requestForceClose(): void {
     if (tabs.activePath) {
       discardPath = tabs.activePath;
@@ -138,6 +156,8 @@
       }
       if (shortcut === "open-folder") {
         void workspace.openFolder();
+      } else if (shortcut === "print") {
+        void printActive();
       } else {
         window.dispatchEvent(new CustomEvent("rypora:command", { detail: { command: shortcut } }));
       }
@@ -362,7 +382,7 @@
         </div>
       {/if}
       <Editor />
-      <StatusBar />
+      <StatusBar onPrint={printActive} />
     {:else if workspace.root}
       <div class="welcome">
         <p>从左侧选择文件，或按 <kbd>Ctrl</kbd> + <kbd>P</kbd> 搜索。</p>

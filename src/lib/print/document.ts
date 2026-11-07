@@ -25,6 +25,7 @@ export async function printDocument(article: HTMLElement, title: string): Promis
   };
 
   document.title = title;
+  document.querySelectorAll(".print-root").forEach((node) => node.remove());
   document.body.appendChild(article);
   document.documentElement.classList.add("printing");
   window.addEventListener("afterprint", cleanup, { once: true });
