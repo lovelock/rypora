@@ -194,8 +194,15 @@ fn apply(
         IndexCommand::RefreshPath(path) => {
             if path.is_dir() {
                 collect_markdown(&path, pending);
-            } else {
+            } else if path.is_file() {
                 pending.insert(path);
+            } else {
+                let prefix = path.to_string_lossy().to_string();
+                for entry in manifest.paths_under(&prefix).cloned().collect::<Vec<_>>() {
+                    writer.delete_term(Term::from_field_text(config.schema.path, &entry));
+                    manifest.entries.remove(&entry);
+                }
+                *dirty = true;
             }
         }
         IndexCommand::DeletePrefix(prefix) => {
@@ -474,6 +481,23 @@ mod tests {
         wait_until(|| reader.searcher().num_docs() == 2);
 
         handle.sender.send(IndexCommand::DeletePrefix(dir)).unwrap();
+        wait_until(|| reader.searcher().num_docs() == 0);
+    }
+
+    #[test]
+    fn refresh_missing_directory_removes_prefix() {
+        let temp = tempdir().unwrap();
+        let (_index, reader, _schema, _status, handle, root) = setup(temp.path());
+        let dir = root.join("sub");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("a.md"), "a").unwrap();
+        fs::write(dir.join("b.md"), "b").unwrap();
+
+        handle.sender.send(IndexCommand::RefreshPath(dir.clone())).unwrap();
+        wait_until(|| reader.searcher().num_docs() == 2);
+        fs::remove_dir_all(&dir).unwrap();
+
+        handle.sender.send(IndexCommand::RefreshPath(dir)).unwrap();
         wait_until(|| reader.searcher().num_docs() == 0);
     }
 

@@ -95,7 +95,12 @@ pub fn start(
             if !paths.is_empty() {
                 if let Some(service) = &index {
                     for path in &paths {
-                        service.enqueue(IndexCommand::RefreshPath(PathBuf::from(path)));
+                        let target = PathBuf::from(path);
+                        if target.exists() {
+                            service.enqueue(IndexCommand::RefreshPath(target));
+                        } else {
+                            service.enqueue(IndexCommand::DeletePrefix(target));
+                        }
                     }
                 }
                 let _ = app.emit("fs://changed", FsChanged { paths });

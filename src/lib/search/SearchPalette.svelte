@@ -47,6 +47,9 @@
   });
 
   $effect(() => {
+    if (!visible) {
+      return;
+    }
     const current = query.trim();
     const id = ++generation;
     clearTimeout(timer);
