@@ -39,6 +39,12 @@ describe("matchShortcut", () => {
     expect(matchShortcut(key({ key: "o", ctrlKey: true }), "linux")).toBe("open-folder");
   });
 
+  test("Cmd/Ctrl+Shift+P prints", () => {
+    expect(matchShortcut(key({ key: "P", metaKey: true, shiftKey: true }), "macos")).toBe("print");
+    expect(matchShortcut(key({ key: "P", ctrlKey: true, shiftKey: true }), "linux")).toBe("print");
+    expect(matchShortcut(key({ key: "p", ctrlKey: true }), "linux")).toBeNull();
+  });
+
   test("F2 renames without a modifier", () => {
     expect(matchShortcut(key({ key: "F2" }), "macos")).toBe("rename");
     expect(matchShortcut(key({ key: "F2", metaKey: true }), "macos")).toBeNull();
