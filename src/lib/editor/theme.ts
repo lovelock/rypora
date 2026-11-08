@@ -134,6 +134,16 @@ export const editorTheme = EditorView.theme({
   ".cm-preview-codeblock code": {
     fontFamily: "inherit",
   },
+  ".cm-preview-frontmatter": {
+    fontFamily: "var(--mono-font, monospace)",
+    color: "var(--muted)",
+    fontSize: "0.9em",
+    fontWeight: "400",
+  },
+  ".cm-preview-frontmatter span": {
+    fontWeight: "400",
+    fontStyle: "normal",
+  },
   ".cm-preview-table": {
     margin: "10px 32px",
     overflowX: "auto",

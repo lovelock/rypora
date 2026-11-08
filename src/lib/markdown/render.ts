@@ -2,13 +2,14 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { resolveRelative } from "../utils/paths";
+import { stripFrontmatter } from "../utils/frontmatter";
 
 const REMOTE = /^(?:https?:|data:|blob:|\/\/)/i;
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 const WINDOWS_DRIVE = /^[a-z]:[\\/]/i;
 
 export function renderMarkdownHtml(markdown: string, docPath: string): string {
-  const raw = marked.parse(markdown, { gfm: true, async: false }) as string;
+  const raw = marked.parse(stripFrontmatter(markdown), { gfm: true, async: false }) as string;
   const rewritten = rewriteImages(raw, docPath);
 
   return DOMPurify.sanitize(rewritten, {

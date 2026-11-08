@@ -83,6 +83,29 @@ describe("livePreview", () => {
     view.destroy();
     parent.remove();
   });
+
+  test("keeps the cursor line editable inside frontmatter", () => {
+    const doc = "---\ntitle: x\n---\n\n# Hi";
+    const parent = document.createElement("div");
+    document.body.appendChild(parent);
+    const state = EditorState.create({
+      doc,
+      selection: { anchor: 5 },
+      extensions: [
+        markdown({ base: markdownLanguage }),
+        livePreview(),
+        documentPath.of("/tmp/a.md"),
+      ],
+    });
+    ensureSyntaxTree(state, state.doc.length, 1000);
+    const view = new EditorView({ state, parent });
+
+    expect(parent.querySelectorAll(".cm-preview-frontmatter").length).toBe(2);
+    expect(parent.querySelector(".cm-content")?.textContent ?? "").toContain("title: x");
+
+    view.destroy();
+    parent.remove();
+  });
 });
 
 describe("table preview", () => {
@@ -165,6 +188,33 @@ describe("table preview", () => {
     table!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
 
     expect(view.state.selection.main.anchor).toBe("XXXX\n".length);
+
+    view.destroy();
+    parent.remove();
+  });
+});
+
+describe("frontmatter preview", () => {
+  test("shows frontmatter as source without a rule or heading", () => {
+    const doc = "---\ntitle: x\n---\n\n# Hi";
+    const parent = document.createElement("div");
+    document.body.appendChild(parent);
+    const state = EditorState.create({
+      doc,
+      selection: { anchor: doc.length },
+      extensions: [
+        markdown({ base: markdownLanguage }),
+        livePreview(),
+        documentPath.of("/tmp/a.md"),
+      ],
+    });
+    ensureSyntaxTree(state, state.doc.length, 1000);
+    const view = new EditorView({ state, parent });
+
+    expect(parent.querySelector(".cm-preview-rule")).toBeNull();
+    expect(parent.querySelector(".cm-preview-h2")).toBeNull();
+    expect(parent.querySelector(".cm-preview-frontmatter")).not.toBeNull();
+    expect(parent.querySelector(".cm-content")?.textContent ?? "").toContain("title: x");
 
     view.destroy();
     parent.remove();

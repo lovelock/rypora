@@ -11,6 +11,7 @@ import type { SyntaxNode } from "@lezer/common";
 import { computeInlineRanges } from "./preview-model";
 import { BulletWidget, CodeBlockWidget, ImageWidget, RuleWidget, TableWidget, TaskWidget } from "./widgets";
 import { resolveRelative } from "../utils/paths";
+import { frontmatterRange } from "../utils/frontmatter";
 
 export const documentPath = Facet.define<string, string>({
   combine: (values) => values[0] ?? "",
@@ -37,6 +38,7 @@ function buildBlocks(state: EditorState): DecorationSet {
   const activeLines = activeLinesOf(state);
   const tree = syntaxTree(state);
   const path = state.facet(documentPath);
+  const frontmatter = frontmatterRange(state.doc);
   const decorations: Range<Decoration>[] = [];
   const seen = new Set<number>();
 
@@ -44,6 +46,10 @@ function buildBlocks(state: EditorState): DecorationSet {
     from: 0,
     to: state.doc.length,
     enter(ref) {
+      if (frontmatter && ref.from >= frontmatter.from && ref.to <= frontmatter.to + 1) {
+        return false;
+      }
+
       if (ref.name === "FencedCode") {
         if (seen.has(ref.from)) {
           return false;
@@ -126,8 +132,12 @@ function build(view: EditorView): BuiltDecorations {
 
   const tree = syntaxTree(state);
   const path = state.facet(documentPath);
+  const frontmatter = frontmatterRange(state.doc);
   const decorations: Range<Decoration>[] = [];
   const atomic: Range<Decoration>[] = [];
+
+  const inFrontmatter = (from: number, to: number): boolean =>
+    frontmatter !== null && from <= frontmatter.to && to >= frontmatter.from;
 
   const hide = (from: number, to: number): void => {
     if (to <= from) {
@@ -149,6 +159,20 @@ function build(view: EditorView): BuiltDecorations {
     atomic.push(Decoration.replace({ widget }).range(from, to));
   };
 
+  if (frontmatter) {
+    const first = state.doc.lineAt(frontmatter.from).number;
+    const last = state.doc.lineAt(frontmatter.to).number;
+    for (let number = first; number <= last; number += 1) {
+      if (!activeLines.has(number)) {
+        decorations.push(
+          Decoration.line({ class: "cm-preview-frontmatter" }).range(
+            state.doc.line(number).from,
+          ),
+        );
+      }
+    }
+  }
+
   for (const visible of view.visibleRanges) {
     for (const range of computeInlineRanges(
       tree,
@@ -157,6 +181,9 @@ function build(view: EditorView): BuiltDecorations {
       visible.from,
       visible.to,
     )) {
+      if (inFrontmatter(range.from, range.to)) {
+        continue;
+      }
       if (range.kind === "hide") {
         hide(range.from, range.to);
       } else {
@@ -170,6 +197,10 @@ function build(view: EditorView): BuiltDecorations {
       from: visible.from,
       to: visible.to,
       enter(ref) {
+        if (frontmatter && ref.from >= frontmatter.from && ref.to <= frontmatter.to + 1) {
+          return false;
+        }
+
         switch (ref.name) {
           case "Image": {
             const urlNode = ref.node.getChild("URL");
