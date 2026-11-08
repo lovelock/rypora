@@ -1,5 +1,5 @@
 import { highlightCodeBlocks } from "./highlight";
-import { renderMarkdownHtml } from "./markdown";
+import { renderMarkdownHtml } from "../markdown/render";
 
 let printing = false;
 

@@ -7,7 +7,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 import { buildPrintDocument, printDocument } from "../src/lib/print/document";
 import { highlightCodeBlocks } from "../src/lib/print/highlight";
-import { renderMarkdownHtml } from "../src/lib/print/markdown";
+import { renderMarkdownHtml } from "../src/lib/markdown/render";
 
 describe("renderMarkdownHtml", () => {
   test("renders headings, lists and tables", () => {

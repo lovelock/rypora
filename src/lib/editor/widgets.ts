@@ -4,6 +4,7 @@ import { EditorView, WidgetType } from "@codemirror/view";
 import { classHighlighter, highlightTree } from "@lezer/highlight";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { copyText } from "../utils/clipboard";
+import { renderMarkdownHtml } from "../markdown/render";
 
 export class ImageWidget extends WidgetType {
   constructor(
@@ -195,5 +196,33 @@ export class CodeBlockWidget extends WidgetType {
     } catch {
       block.textContent = this.code;
     }
+  }
+}
+
+export class TableWidget extends WidgetType {
+  constructor(
+    readonly source: string,
+    readonly path: string,
+    readonly from: number,
+  ) {
+    super();
+  }
+
+  eq(other: TableWidget): boolean {
+    return other.source === this.source && other.path === this.path;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-preview-table";
+    wrapper.innerHTML = renderMarkdownHtml(this.source, this.path);
+
+    wrapper.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      view.dispatch({ selection: { anchor: this.from }, scrollIntoView: true });
+      view.focus();
+    });
+
+    return wrapper;
   }
 }

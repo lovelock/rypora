@@ -84,3 +84,47 @@ describe("livePreview", () => {
     parent.remove();
   });
 });
+
+describe("table preview", () => {
+  function render(doc: string, anchor: number) {
+    const parent = document.createElement("div");
+    document.body.appendChild(parent);
+    const state = EditorState.create({
+      doc,
+      selection: { anchor },
+      extensions: [
+        markdown({ base: markdownLanguage }),
+        livePreview(),
+        documentPath.of("/tmp/smoke/demo.md"),
+      ],
+    });
+    ensureSyntaxTree(state, state.doc.length, 1000);
+    const view = new EditorView({ state, parent });
+    return { parent, view };
+  }
+
+  const TABLE = "| 名称 | 数量 |\n| --- | ---: |\n| 苹果 | 3 |\n| 香蕉 | 5 |\n\n尾行";
+
+  test("renders a table widget when the cursor is outside it", () => {
+    const { parent, view } = render(TABLE, TABLE.length);
+    const table = parent.querySelector(".cm-preview-table");
+
+    expect(table).not.toBeNull();
+    expect(table?.querySelector("table")).not.toBeNull();
+    expect(table?.textContent).toContain("苹果");
+    expect(parent.querySelector(".cm-content")?.textContent ?? "").not.toContain("| --- |");
+
+    view.destroy();
+    parent.remove();
+  });
+
+  test("shows the source when the cursor is inside the table", () => {
+    const { parent, view } = render(TABLE, 0);
+
+    expect(parent.querySelector(".cm-preview-table")).toBeNull();
+    expect(parent.querySelector(".cm-content")?.textContent ?? "").toContain("| --- |");
+
+    view.destroy();
+    parent.remove();
+  });
+});

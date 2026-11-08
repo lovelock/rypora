@@ -134,6 +134,28 @@ export const editorTheme = EditorView.theme({
   ".cm-preview-codeblock code": {
     fontFamily: "inherit",
   },
+  ".cm-preview-table": {
+    margin: "10px 0",
+    overflowX: "auto",
+  },
+  ".cm-preview-table table": {
+    minWidth: "50%",
+    borderCollapse: "collapse",
+    fontSize: "0.92em",
+    lineHeight: "1.5",
+  },
+  ".cm-preview-table th, .cm-preview-table td": {
+    padding: "4px 10px",
+    border: "1px solid var(--border)",
+    verticalAlign: "top",
+  },
+  ".cm-preview-table th": {
+    background: "var(--sidebar-bg)",
+    fontWeight: "600",
+  },
+  ".cm-preview-table p": {
+    margin: "0",
+  },
   ".cm-preview-rule": {
     margin: "18px 0",
     border: "none",

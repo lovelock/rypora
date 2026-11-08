@@ -9,7 +9,7 @@ import {
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { computeInlineRanges } from "./preview-model";
-import { BulletWidget, CodeBlockWidget, ImageWidget, RuleWidget, TaskWidget } from "./widgets";
+import { BulletWidget, CodeBlockWidget, ImageWidget, RuleWidget, TableWidget, TaskWidget } from "./widgets";
 import { resolveRelative } from "../utils/paths";
 
 export const documentPath = Facet.define<string, string>({
@@ -36,6 +36,7 @@ function activeLinesOf(state: EditorState): Set<number> {
 function buildBlocks(state: EditorState): DecorationSet {
   const activeLines = activeLinesOf(state);
   const tree = syntaxTree(state);
+  const path = state.facet(documentPath);
   const decorations: Range<Decoration>[] = [];
   const seen = new Set<number>();
 
@@ -67,6 +68,27 @@ function buildBlocks(state: EditorState): DecorationSet {
           Decoration.replace({
             block: true,
             widget: new CodeBlockWidget(code, lang, ref.from),
+          }).range(start.from, end.to),
+        );
+        return false;
+      }
+
+      if (ref.name === "Table") {
+        const start = state.doc.lineAt(ref.from);
+        const end = state.doc.lineAt(Math.min(ref.to, state.doc.length));
+        for (let line = start.number; line <= end.number; line += 1) {
+          if (activeLines.has(line)) {
+            return false;
+          }
+        }
+        decorations.push(
+          Decoration.replace({
+            block: true,
+            widget: new TableWidget(
+              state.doc.sliceString(ref.from, ref.to),
+              path,
+              ref.from,
+            ),
           }).range(start.from, end.to),
         );
         return false;
