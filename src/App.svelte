@@ -133,6 +133,13 @@
     }
   }
 
+  function handleEditorError(event: Event): void {
+    const message = (event as CustomEvent<{ message?: string }>).detail?.message;
+    if (message) {
+      tabs.error = message;
+    }
+  }
+
   function handleOpenLink(event: Event): void {
     const detail = (event as CustomEvent<{ href: string; path: string }>).detail;
     if (!detail?.href) {
@@ -234,6 +241,7 @@
 
   onMount(async () => {
     window.addEventListener("rypora:open-link", handleOpenLink);
+    window.addEventListener("rypora:error", handleEditorError);
     window.addEventListener("blur", saveActive);
     document.addEventListener("visibilitychange", saveActive);
 
@@ -323,6 +331,7 @@
 
   onDestroy(() => {
     window.removeEventListener("rypora:open-link", handleOpenLink);
+    window.removeEventListener("rypora:error", handleEditorError);
     window.removeEventListener("blur", saveActive);
     document.removeEventListener("visibilitychange", saveActive);
     unlisten?.();

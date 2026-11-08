@@ -7,6 +7,7 @@ import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, drawSelection, keymap } from "@codemirror/view";
 import { editorTheme, markdownHighlight } from "./theme";
 import { livePreview } from "./live-preview";
+import { imagePaste } from "./image-paste";
 import { toggleWrap } from "./format-commands";
 
 export function baseExtensions(): Extension[] {
@@ -20,6 +21,7 @@ export function baseExtensions(): Extension[] {
     highlightSelectionMatches(),
     editorTheme,
     livePreview(),
+    imagePaste,
     keymap.of([
       { key: "Mod-b", run: wrapSelection("**"), preventDefault: true },
       { key: "Mod-i", run: wrapSelection("*"), preventDefault: true },
