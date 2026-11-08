@@ -1,24 +1,41 @@
 <script lang="ts">
+  import { MAX_TABLE_SIZE } from "../editor/table";
+
   let {
     onSelect,
     onClose,
   }: { onSelect: (rows: number, columns: number) => void; onClose: () => void } = $props();
 
-  const size = 8;
+  const size = MAX_TABLE_SIZE;
   let rows = $state(0);
   let columns = $state(0);
+  let panel = $state<HTMLDivElement | undefined>(undefined);
 
-  function choose(): void {
-    if (rows > 0 && columns > 0) {
-      onSelect(rows, columns);
-    }
+  $effect(() => {
+    panel?.focus();
+  });
+
+  function choose(nextRows: number, nextColumns: number): void {
+    onSelect(nextRows, nextColumns);
     onClose();
   }
 </script>
 
-<div class="table-picker" role="dialog" aria-label="插入表格">
-  <button class="picker-backdrop" aria-label="关闭" onclick={onClose}></button>
-  <div class="picker-panel">
+<div
+  class="table-picker"
+  role="dialog"
+  aria-modal="true"
+  aria-label="插入表格"
+  tabindex="-1"
+  onkeydown={(event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+    }
+  }}
+>
+  <button class="picker-backdrop" tabindex="-1" aria-label="关闭" onclick={onClose}></button>
+  <div class="picker-panel" tabindex="-1" bind:this={panel}>
     <div class="picker-grid">
       {#each Array.from({ length: size }) as _, r}
         <div class="picker-row">
@@ -32,7 +49,7 @@
                 rows = r + 1;
                 columns = c + 1;
               }}
-              onclick={choose}
+              onclick={() => choose(r + 1, c + 1)}
             ></button>
           {/each}
         </div>
@@ -67,6 +84,7 @@
     border-radius: 8px;
     background: var(--bg);
     box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
+    outline: none;
   }
 
   .picker-grid {

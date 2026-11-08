@@ -9,6 +9,7 @@
   import type { AppConfig, IndexStatus, TextHit } from "./lib/types";
   import { basename, resolveRelative } from "./lib/utils/paths";
   import { buildPrintDocument, printDocument } from "./lib/print/document";
+  import { INSERT_TABLE_EVENT } from "./lib/editor/table";
   import { detectPlatform } from "./lib/utils/platform";
   import { matchShortcut } from "./lib/utils/shortcuts";
   import FileTree from "./lib/sidebar/FileTree.svelte";
@@ -88,7 +89,7 @@
   }
 
   function insertTable(rows: number, columns: number): void {
-    window.dispatchEvent(new CustomEvent("rypora:insert-table", { detail: { rows, columns } }));
+    window.dispatchEvent(new CustomEvent(INSERT_TABLE_EVENT, { detail: { rows, columns } }));
   }
 
   async function printActive(): Promise<void> {

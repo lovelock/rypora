@@ -33,9 +33,9 @@
     </span>
     <button class="action" title="插入表格" onclick={() => (tableOpen = true)}>表格</button>
     <button class="action" title="打印 / 另存为 PDF" onclick={onPrint}>打印</button>
-  {/if}
-  {#if tableOpen}
-    <TablePicker onSelect={onInsertTable} onClose={() => (tableOpen = false)} />
+    {#if tableOpen}
+      <TablePicker onSelect={onInsertTable} onClose={() => (tableOpen = false)} />
+    {/if}
   {/if}
 </footer>
 

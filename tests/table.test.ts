@@ -18,6 +18,10 @@ describe("buildTableTemplate", () => {
     expect(buildTableTemplate(0, 0)).toBe("|  |\n| --- |");
     expect(buildTableTemplate(99, 99).split("\n")).toHaveLength(9);
   });
+
+  test("builds a single-column table", () => {
+    expect(buildTableTemplate(2, 1)).toBe("|  |\n| --- |\n|  |");
+  });
 });
 
 describe("tableInsertion", () => {
@@ -32,6 +36,27 @@ describe("tableInsertion", () => {
       "hello\n\n|  |  |\n| --- | --- |\n|  |  |\n\nworld",
     );
     expect(next.selection.main.anchor).toBe(9);
+  });
+
+  test("inserts at the start of the document without leading blank lines", () => {
+    const state = EditorState.create({ doc: "hello", selection: { anchor: 0 } });
+    const { changes, anchor } = tableInsertion(state.doc, 0, 0, 1, 1);
+    const next = state.update({ changes, selection: { anchor } }).state;
+
+    expect(next.doc.toString()).toBe("|  |\n| --- |\n\nhello");
+    expect(next.selection.main.anchor).toBe(2);
+  });
+
+  test("replaces a selection with the table", () => {
+    const state = EditorState.create({
+      doc: "hello world",
+      selection: { anchor: 0, head: 5 },
+    });
+    const { changes, anchor } = tableInsertion(state.doc, 0, 5, 1, 1);
+    const next = state.update({ changes, selection: { anchor } }).state;
+
+    expect(next.doc.toString()).toBe("|  |\n| --- |\n\n world");
+    expect(next.selection.main.anchor).toBe(2);
   });
 
   test("separates the table from text when inserting mid-line", () => {
