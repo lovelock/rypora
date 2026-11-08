@@ -35,7 +35,7 @@ Rypora 是一个本地优先的 Markdown 工作区：打开一个文件夹就能
 Arch Linux 安装：
 
 ```bash
-sudo pacman -U rypora-0.4.0-1-x86_64.pkg.tar.zst
+sudo pacman -U rypora-0.4.1-1-x86_64.pkg.tar.zst
 ```
 
 构建产物未做代码签名。macOS 首次打开需要右键 → “打开”；Windows 可能弹出 SmartScreen 提示。
