@@ -87,6 +87,10 @@
     }
   }
 
+  function insertTable(rows: number, columns: number): void {
+    window.dispatchEvent(new CustomEvent("rypora:insert-table", { detail: { rows, columns } }));
+  }
+
   async function printActive(): Promise<void> {
     const tab = tabs.active;
     if (!tab) {
@@ -387,7 +391,7 @@
         </div>
       {/if}
       <Editor />
-      <StatusBar onPrint={printActive} />
+      <StatusBar onPrint={printActive} onInsertTable={insertTable} />
     {:else if workspace.root}
       <div class="welcome">
         <p>从左侧选择文件，或按 <kbd>Ctrl</kbd> + <kbd>P</kbd> 搜索。</p>

@@ -3,6 +3,7 @@
   import { EditorView } from "@codemirror/view";
   import { tabs } from "../state/tabs.svelte";
   import { createEditorState } from "./setup";
+  import { tableInsertion } from "./table";
   import { findTerm } from "../utils/find-term";
 
   let host: HTMLDivElement | undefined = $state(undefined);
@@ -15,7 +16,24 @@
       parent: host!,
     });
     view.scrollDOM.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("rypora:insert-table", handleInsertTable);
   });
+
+  function handleInsertTable(event: Event): void {
+    const detail = (event as CustomEvent<{ rows?: number; columns?: number }>).detail;
+    if (!view || !detail?.rows || !detail?.columns) {
+      return;
+    }
+
+    const { from, to } = view.state.selection.main;
+    const insertion = tableInsertion(view.state.doc, from, to, detail.rows, detail.columns);
+    view.dispatch({
+      changes: insertion.changes,
+      selection: { anchor: insertion.anchor },
+      scrollIntoView: true,
+    });
+    view.focus();
+  }
 
   function handleScroll(): void {
     if (view && currentPath) {
@@ -28,6 +46,7 @@
       tabs.capture(currentPath, view.state, view.scrollDOM.scrollTop);
     }
     view?.scrollDOM.removeEventListener("scroll", handleScroll);
+    window.removeEventListener("rypora:insert-table", handleInsertTable);
     view?.destroy();
     view = null;
   });
