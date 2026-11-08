@@ -2,6 +2,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
+import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
 import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, drawSelection, keymap } from "@codemirror/view";
 import { editorTheme, markdownHighlight } from "./theme";
@@ -15,6 +16,8 @@ export function baseExtensions(): Extension[] {
     EditorView.lineWrapping,
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     syntaxHighlighting(markdownHighlight),
+    search({ top: true }),
+    highlightSelectionMatches(),
     editorTheme,
     livePreview(),
     keymap.of([
@@ -24,6 +27,7 @@ export function baseExtensions(): Extension[] {
       { key: "Mod-e", run: wrapSelection("`"), preventDefault: true },
       ...defaultKeymap,
       ...historyKeymap,
+      ...searchKeymap,
       indentWithTab,
     ]),
   ];

@@ -57,6 +57,9 @@ sudo pacman -U rypora-0.3.0-1-x86_64.pkg.tar.zst
 | `Cmd/Ctrl+O` | 打开文件夹 |
 | `Cmd/Ctrl+,` | 设置 |
 | `Cmd/Ctrl+P` | 文件名 + 正文搜索 |
+| `Cmd/Ctrl+F` | 当前笔记内查找 / 替换 |
+| `Cmd/Ctrl+G` | 查找下一个 |
+| `Shift+Cmd/Ctrl+G` | 查找上一个 |
 | `Cmd/Ctrl+S` | 立即保存 |
 | `Cmd/Ctrl+W` | 关闭当前标签 |
 | `Cmd/Ctrl+Shift+P` | 打印 / 另存为 PDF |
@@ -65,6 +68,8 @@ sudo pacman -U rypora-0.3.0-1-x86_64.pkg.tar.zst
 | `Cmd/Ctrl+Shift+X` | 删除线 |
 | `Cmd/Ctrl+E` | 行内代码 |
 | `F2` | 重命名当前选中项 |
+
+> `Cmd/Ctrl+F` 打开查找栏，里面可以直接替换；支持区分大小写、正则和全词匹配。
 
 ### 打印 / 导出 PDF
 

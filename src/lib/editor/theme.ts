@@ -166,6 +166,42 @@ export const editorTheme = EditorView.theme({
   ".cm-preview-table p": {
     margin: "0",
   },
+  ".cm-panel.cm-search": {
+    padding: "6px 10px",
+    borderBottom: "1px solid var(--border)",
+    background: "var(--sidebar-bg)",
+    color: "var(--fg)",
+    fontFamily: "var(--ui-font)",
+    fontSize: "12px",
+  },
+  ".cm-panel.cm-search input, .cm-panel.cm-search button": {
+    fontFamily: "var(--ui-font)",
+    fontSize: "12px",
+  },
+  ".cm-panel.cm-search input": {
+    padding: "3px 6px",
+    border: "1px solid var(--border)",
+    borderRadius: "4px",
+    background: "var(--bg)",
+    color: "var(--fg)",
+  },
+  ".cm-panel.cm-search button": {
+    padding: "2px 6px",
+    border: "1px solid var(--border)",
+    borderRadius: "4px",
+    background: "var(--bg)",
+    color: "var(--fg)",
+    cursor: "pointer",
+  },
+  ".cm-panel.cm-search label": {
+    color: "var(--muted)",
+  },
+  ".cm-searchMatch": {
+    background: "var(--accent-soft)",
+  },
+  ".cm-searchMatch.cm-searchMatch-selected": {
+    background: "var(--selection)",
+  },
   ".cm-preview-rule": {
     margin: "18px 0",
     border: "none",
