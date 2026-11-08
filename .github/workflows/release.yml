@@ -64,7 +64,7 @@ jobs:
             target: ""
           - name: windows-x86_64
             os: windows-latest
-            bundles: nsis,msi
+            bundles: msi
             target: ""
           - name: macos-arm64
             os: macos-latest
