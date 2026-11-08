@@ -1,6 +1,6 @@
 [package]
 name = "rypora"
-version = "0.2.0"
+version = "0.3.0"
 description = "A lightweight local Markdown workspace"
 authors = ["Rypora Dev"]
 edition = "2021"
