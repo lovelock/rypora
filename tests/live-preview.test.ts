@@ -127,4 +127,46 @@ describe("table preview", () => {
     view.destroy();
     parent.remove();
   });
+
+  test("switches between source and table as the cursor enters and leaves", () => {
+    const { parent, view } = render(TABLE, TABLE.length);
+    expect(parent.querySelector(".cm-preview-table")).not.toBeNull();
+
+    view.dispatch({ selection: { anchor: 0 } });
+    expect(parent.querySelector(".cm-preview-table")).toBeNull();
+
+    view.dispatch({ selection: { anchor: TABLE.length } });
+    expect(parent.querySelector(".cm-preview-table")).not.toBeNull();
+
+    view.destroy();
+    parent.remove();
+  });
+
+  test("renders a table inside a blockquote", () => {
+    const doc = "> | a | b |\n> | --- | --- |\n> | 1 | 2 |\n\n尾行";
+    const { parent, view } = render(doc, doc.length);
+    const table = parent.querySelector(".cm-preview-table");
+
+    expect(table).not.toBeNull();
+    expect(table?.querySelector("table")).not.toBeNull();
+    expect(table?.querySelectorAll("td").length).toBe(2);
+
+    view.destroy();
+    parent.remove();
+  });
+
+  test("clicking jumps to the table position after edits above", () => {
+    const { parent, view } = render(TABLE, TABLE.length);
+    view.dispatch({ changes: { from: 0, insert: "XXXX\n" } });
+
+    const table = parent.querySelector<HTMLElement>(".cm-preview-table");
+    expect(table).not.toBeNull();
+
+    table!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+
+    expect(view.state.selection.main.anchor).toBe("XXXX\n".length);
+
+    view.destroy();
+    parent.remove();
+  });
 });

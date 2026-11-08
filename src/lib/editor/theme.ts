@@ -135,7 +135,7 @@ export const editorTheme = EditorView.theme({
     fontFamily: "inherit",
   },
   ".cm-preview-table": {
-    margin: "10px 0",
+    margin: "10px 32px",
     overflowX: "auto",
   },
   ".cm-preview-table table": {

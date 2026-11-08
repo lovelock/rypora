@@ -203,7 +203,6 @@ export class TableWidget extends WidgetType {
   constructor(
     readonly source: string,
     readonly path: string,
-    readonly from: number,
   ) {
     super();
   }
@@ -219,7 +218,8 @@ export class TableWidget extends WidgetType {
 
     wrapper.addEventListener("mousedown", (event) => {
       event.preventDefault();
-      view.dispatch({ selection: { anchor: this.from }, scrollIntoView: true });
+      const position = view.posAtDOM(wrapper);
+      view.dispatch({ selection: { anchor: position }, scrollIntoView: true });
       view.focus();
     });
 

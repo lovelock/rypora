@@ -84,11 +84,7 @@ function buildBlocks(state: EditorState): DecorationSet {
         decorations.push(
           Decoration.replace({
             block: true,
-            widget: new TableWidget(
-              state.doc.sliceString(ref.from, ref.to),
-              path,
-              ref.from,
-            ),
+            widget: new TableWidget(state.doc.sliceString(start.from, end.to), path),
           }).range(start.from, end.to),
         );
         return false;
