@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("@tauri-apps/api/core", () => ({
   convertFileSrc: (path: string) => `asset://${path}`,
 }));
 
+import { buildPrintDocument, printDocument } from "../src/lib/print/document";
 import { highlightCodeBlocks } from "../src/lib/print/highlight";
 import { renderMarkdownHtml } from "../src/lib/print/markdown";
 
@@ -28,10 +29,31 @@ describe("renderMarkdownHtml", () => {
     expect(html).not.toContain("onerror");
   });
 
+  test("removes javascript urls and inline styles", () => {
+    const html = renderMarkdownHtml(
+      '[x](javascript:alert(1))\n\n<p style="position:fixed">x</p>',
+      "/w/a.md",
+    );
+    expect(html).not.toContain("javascript:");
+    expect(html).not.toContain("style=");
+  });
+
+  test("keeps task-list checkboxes", () => {
+    const html = renderMarkdownHtml("- [x] done\n- [ ] todo\n", "/w/a.md");
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain("checked");
+  });
+
   test("rewrites relative image paths", () => {
     const html = renderMarkdownHtml("![x](img/x.png)", "/w/notes/a.md");
     expect(html).toContain("asset://");
     expect(html).toContain("/w/notes/img/x.png");
+  });
+
+  test("rewrites absolute Windows image paths", () => {
+    const html = renderMarkdownHtml("![x](C:\\pics\\a.png)", "C:\\w\\a.md");
+    expect(html).toContain("asset://");
+    expect(html.toLowerCase()).toContain("pics");
   });
 
   test("keeps absolute image urls untouched", () => {
@@ -56,9 +78,6 @@ describe("highlightCodeBlocks", () => {
   });
 });
 
-import { afterEach, beforeEach } from "vitest";
-import { buildPrintDocument, printDocument } from "../src/lib/print/document";
-
 describe("print document lifecycle", () => {
   beforeEach(() => {
     document.title = "Original";
@@ -67,6 +86,7 @@ describe("print document lifecycle", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
     document.querySelectorAll(".print-root").forEach((node) => node.remove());
     document.documentElement.classList.remove("printing");
     document.title = "Original";
@@ -106,6 +126,18 @@ describe("print document lifecycle", () => {
     expect(await printDocument(article, "Note")).toBe(false);
     expect(document.body.contains(article)).toBe(false);
     expect(document.documentElement.classList.contains("printing")).toBe(false);
+    expect(document.title).toBe("Original");
+  });
+
+  test("cleans up when afterprint never fires", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(window, "print").mockImplementation(() => {});
+    const article = await buildPrintDocument("# Note", "/w/a.md");
+
+    await printDocument(article, "Note");
+    vi.advanceTimersByTime(60_000);
+
+    expect(document.body.contains(article)).toBe(false);
     expect(document.title).toBe("Original");
   });
 });

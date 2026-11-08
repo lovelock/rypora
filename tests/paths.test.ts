@@ -27,6 +27,11 @@ describe("resolveRelative", () => {
   test("resolves Windows document paths", () => {
     expect(resolveRelative("C:\\w\\notes\\a.md", "img/x.png")).toBe("C:/w/notes/img/x.png");
   });
+
+  test("resolves Windows parent segments", () => {
+    expect(resolveRelative("C:\\w\\notes\\a.md", "../img/x.png")).toBe("C:/w/img/x.png");
+    expect(resolveRelative("C:\\w\\notes\\a.md", "..\\img\\x.png")).toBe("C:/w/img/x.png");
+  });
 });
 
 describe("parentDirectory", () => {

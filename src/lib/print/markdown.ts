@@ -3,16 +3,21 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { resolveRelative } from "../utils/paths";
 
-const ABSOLUTE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+const REMOTE = /^(?:https?:|data:|blob:|\/\/)/i;
+const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+const WINDOWS_DRIVE = /^[a-z]:[\\/]/i;
 
 export function renderMarkdownHtml(markdown: string, docPath: string): string {
   const raw = marked.parse(markdown, { gfm: true, async: false }) as string;
-  const clean = DOMPurify.sanitize(raw, {
-    USE_PROFILES: { html: true },
-    FORBID_TAGS: ["style", "form", "input", "button"],
-  }) as string;
+  const rewritten = rewriteImages(raw, docPath);
 
-  return rewriteImages(clean, docPath);
+  return DOMPurify.sanitize(rewritten, {
+    USE_PROFILES: { html: true },
+    FORBID_TAGS: ["style", "form", "button"],
+    FORBID_ATTR: ["style"],
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:https?|mailto|tel|callto|sms|cid|xmpp|asset|data|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  }) as string;
 }
 
 function rewriteImages(html: string, docPath: string): string {
@@ -21,11 +26,24 @@ function rewriteImages(html: string, docPath: string): string {
 
   for (const image of template.content.querySelectorAll("img")) {
     const source = image.getAttribute("src");
-    if (!source || ABSOLUTE.test(source)) {
+    if (!source || REMOTE.test(source)) {
       continue;
     }
-    image.setAttribute("src", convertFileSrc(resolveRelative(docPath, source)));
+
+    const local = decodePath(source);
+    if (SCHEME.test(local) && !WINDOWS_DRIVE.test(local)) {
+      continue;
+    }
+    image.setAttribute("src", convertFileSrc(resolveRelative(docPath, local)));
   }
 
   return template.innerHTML;
+}
+
+function decodePath(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
 }

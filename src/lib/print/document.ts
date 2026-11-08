@@ -1,6 +1,8 @@
 import { highlightCodeBlocks } from "./highlight";
 import { renderMarkdownHtml } from "./markdown";
 
+let printing = false;
+
 export async function buildPrintDocument(markdown: string, docPath: string): Promise<HTMLElement> {
   const article = document.createElement("article");
   article.className = "print-root";
@@ -10,10 +12,16 @@ export async function buildPrintDocument(markdown: string, docPath: string): Pro
 }
 
 export async function printDocument(article: HTMLElement, title: string): Promise<boolean> {
+  if (printing) {
+    return true;
+  }
+  printing = true;
+
   const previousTitle = document.title;
   let fallback: number | undefined;
 
   const cleanup = (): void => {
+    printing = false;
     document.documentElement.classList.remove("printing");
     article.remove();
     document.title = previousTitle;
@@ -33,6 +41,9 @@ export async function printDocument(article: HTMLElement, title: string): Promis
 
   try {
     await waitForImages(article);
+    if (document.fonts) {
+      await document.fonts.ready;
+    }
     window.print();
     return true;
   } catch {

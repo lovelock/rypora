@@ -94,13 +94,18 @@
     }
     const state = tabs.state(tab.path);
     if (!state) {
+      tabs.error = "打印失败：当前文件尚未加载。";
       return;
     }
 
-    const article = await buildPrintDocument(state.doc.toString(), tab.path);
-    const title = basename(tab.path).replace(/\.(md|markdown|mdown)$/i, "");
-    if (!(await printDocument(article, title))) {
-      tabs.error = "打印失败：当前环境不支持打印。";
+    try {
+      const article = await buildPrintDocument(state.doc.toString(), tab.path);
+      const title = basename(tab.path).replace(/\.(md|markdown|mdown)$/i, "");
+      if (!(await printDocument(article, title))) {
+        tabs.error = "打印失败：当前环境不支持打印。";
+      }
+    } catch (error) {
+      tabs.error = `打印失败：${String(error)}`;
     }
   }
 
