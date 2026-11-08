@@ -46,6 +46,7 @@ pub fn run() {
             commands::save_config_command,
             commands::reveal_item,
             commands::open_url,
+            commands::save_attachment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -55,6 +55,18 @@ export function saveFileAs(path: string, text: string, eol: Eol): Promise<number
   return invoke("save_file_as", { path, text, eol });
 }
 
+export function saveAttachment(
+  notePath: string,
+  name: string,
+  bytes: Uint8Array,
+): Promise<string> {
+  return invoke<string>("save_attachment", {
+    notePath,
+    name,
+    bytes: Array.from(bytes),
+  });
+}
+
 export function searchFiles(query: string, limit = 50): Promise<SearchHit[]> {
   return invoke("search_files", { query, limit });
 }
