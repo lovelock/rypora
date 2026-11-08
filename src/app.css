@@ -110,7 +110,7 @@ button {
 
 .sidebar {
   width: var(--sidebar-width);
-  min-width: 180px;
+  min-width: 240px;
   display: flex;
   flex-direction: column;
   background: var(--sidebar-bg);

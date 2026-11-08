@@ -19,8 +19,10 @@
   import Editor from "./lib/editor/Editor.svelte";
   import StatusBar from "./lib/StatusBar.svelte";
   import ConfirmDialog from "./lib/ui/ConfirmDialog.svelte";
+  import SettingsDialog from "./lib/ui/SettingsDialog.svelte";
 
   let paletteVisible = $state(false);
+  let settingsOpen = $state(false);
   let theme = $state("system");
   let restored = $state(false);
   let sidebarWidth = $state(260);
@@ -44,9 +46,13 @@
     }
   }
 
+  function setTheme(value: string): void {
+    theme = value;
+    applyTheme(value);
+  }
+
   function cycleTheme(): void {
-    theme = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
-    applyTheme(theme);
+    setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system");
   }
 
   function openFile(path: string): void {
@@ -164,6 +170,13 @@
       if (event.repeat || paletteVisible || discardPath) {
         return;
       }
+      if (shortcut === "settings") {
+        settingsOpen = !settingsOpen;
+        return;
+      }
+      if (settingsOpen) {
+        return;
+      }
       if (shortcut === "open-folder") {
         void workspace.openFolder();
       } else if (shortcut === "print") {
@@ -178,7 +191,7 @@
 
     if (modifier && event.key.toLowerCase() === "p") {
       event.preventDefault();
-      if (workspace.root) {
+      if (workspace.root && !settingsOpen) {
         paletteVisible = true;
       }
       return;
@@ -226,8 +239,10 @@
 
     const config = await loadConfig();
     theme = config.theme;
-    sidebarWidth = config.sidebarWidth;
-    fontSize = config.fontSize;
+    const size = Number.isFinite(config.fontSize) ? config.fontSize : 16;
+    const width = Number.isFinite(config.sidebarWidth) ? config.sidebarWidth : 260;
+    fontSize = Math.min(22, Math.max(13, size));
+    sidebarWidth = Math.min(420, Math.max(240, width));
     applyTheme(theme);
 
     if (config.lastWorkspace) {
@@ -347,6 +362,7 @@
       <button class="ghost" title="切换主题" onclick={cycleTheme}>
         {theme === "system" ? "自动" : theme === "light" ? "浅色" : "深色"}
       </button>
+      <button class="ghost" title="设置" aria-label="设置" onclick={() => (settingsOpen = true)}>⚙</button>
       <button class="ghost" title="打开文件夹" onclick={() => workspace.openFolder()}>打开</button>
     </header>
 
@@ -422,5 +438,17 @@
     danger
     onConfirm={confirmForceClose}
     onCancel={() => (discardPath = null)}
+  />
+{/if}
+
+{#if settingsOpen}
+  <SettingsDialog
+    {theme}
+    {fontSize}
+    {sidebarWidth}
+    onTheme={setTheme}
+    onFontSize={(value) => (fontSize = value)}
+    onSidebarWidth={(value) => (sidebarWidth = value)}
+    onClose={() => (settingsOpen = false)}
   />
 {/if}

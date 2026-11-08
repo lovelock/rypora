@@ -45,6 +45,13 @@ describe("matchShortcut", () => {
     expect(matchShortcut(key({ key: "p", ctrlKey: true }), "linux")).toBeNull();
   });
 
+  test("Cmd/Ctrl+, opens settings", () => {
+    expect(matchShortcut(key({ key: ",", metaKey: true }), "macos")).toBe("settings");
+    expect(matchShortcut(key({ key: ",", ctrlKey: true }), "linux")).toBe("settings");
+    expect(matchShortcut(key({ key: ",", ctrlKey: true }), "macos")).toBeNull();
+    expect(matchShortcut(key({ key: ",", metaKey: true, altKey: true }), "macos")).toBeNull();
+  });
+
   test("F2 renames without a modifier", () => {
     expect(matchShortcut(key({ key: "F2" }), "macos")).toBe("rename");
     expect(matchShortcut(key({ key: "F2", metaKey: true }), "macos")).toBeNull();

@@ -1,7 +1,13 @@
 import type { Platform } from "./platform";
 import { parentDirectory } from "./paths";
 
-export type Shortcut = "new-file" | "new-folder" | "open-folder" | "rename" | "print";
+export type Shortcut =
+  | "new-file"
+  | "new-folder"
+  | "open-folder"
+  | "rename"
+  | "print"
+  | "settings";
 
 export interface ShortcutEvent {
   key: string;
@@ -28,6 +34,9 @@ export function matchShortcut(event: ShortcutEvent, platform: Platform): Shortcu
   }
   if (mod && event.shiftKey && key === "p") {
     return "print";
+  }
+  if (mod && !event.shiftKey && key === ",") {
+    return "settings";
   }
   if (!mod && !event.shiftKey && event.key === "F2") {
     return "rename";

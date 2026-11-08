@@ -55,6 +55,7 @@ sudo pacman -U rypora-0.3.0-1-x86_64.pkg.tar.zst
 | `Cmd/Ctrl+N` | 新建文件 |
 | `Cmd/Ctrl+Shift+N` | 新建文件夹 |
 | `Cmd/Ctrl+O` | 打开文件夹 |
+| `Cmd/Ctrl+,` | 设置 |
 | `Cmd/Ctrl+P` | 文件名 + 正文搜索 |
 | `Cmd/Ctrl+S` | 立即保存 |
 | `Cmd/Ctrl+W` | 关闭当前标签 |
